@@ -15,6 +15,9 @@ export type ClientFormat =
 /** Transport an MCP server speaks. */
 export type Transport = 'stdio' | 'sse' | 'http'
 
+/** Host runtime a stdio server needs in order to launch. */
+export type Runtime = 'node' | 'python' | 'docker' | 'none'
+
 /** A single server entry as it lives inside a client config. */
 export interface ServerEntry {
   /** Key/name used in the client config. */
@@ -63,6 +66,8 @@ export interface ServerSpec {
   env?: Record<string, string>
   /** remote spec. */
   url?: string
+  /** Host runtime this server's launch command needs (npx->node, uvx->python, etc.). */
+  runtime?: Runtime
   /** Secret keys this server needs (mapped into env or url at apply time). */
   requiredSecrets?: SecretRequirement[]
   tags: string[]
@@ -146,6 +151,8 @@ export interface Preferences {
   backupDir?: string
   dismissedSuggestionIds: string[]
   favoriteServerIds: string[]
+  /** Chosen prerequisite footprint; drives which runtimes the app ensures. */
+  baseBuild: BaseBuild
 }
 
 /** Result of a system scan: detected tools that have known MCP servers. */
@@ -154,6 +161,47 @@ export interface ScanFinding {
   toolName: string
   evidence: string // why we think it's installed
   server: ServerSpec
+}
+
+/** Which "base build" of prerequisites the user wants to stand up. */
+export type BaseBuild = 'minimal' | 'standard' | 'full'
+
+/** A host runtime/tool the launched MCP servers depend on. */
+export interface RuntimeStatus {
+  id: string // 'node' | 'python' | 'uv' | 'docker' | 'git'
+  name: string
+  binary: string
+  present: boolean
+  version?: string
+  purpose: string
+  /** Which server runtime category this satisfies, if any. */
+  satisfies?: Runtime
+}
+
+/** A way to install a missing runtime on this machine. */
+export interface InstallRoute {
+  runtimeId: string
+  manager: string // 'winget' | 'brew' | 'apt' | 'manual' ...
+  command: string
+  manualUrl: string
+  /** Safe to run from the app (no sudo / no heavy GUI installer). */
+  canAutoRun: boolean
+}
+
+export interface SystemReadiness {
+  os: 'win32' | 'darwin' | 'linux'
+  packageManagers: string[]
+  runtimes: RuntimeStatus[]
+  /** Best install route per missing runtime (first = recommended). */
+  routes: InstallRoute[]
+  /** node present? python/uv present? docker present? — convenience rollup. */
+  ready: { node: boolean; python: boolean; docker: boolean }
+}
+
+export interface InstallResult {
+  runtimeId: string
+  ok: boolean
+  output: string
 }
 
 /** The full state the renderer renders from. */
@@ -183,7 +231,9 @@ export const IPC = {
   saveProfile: 'profiles:save',
   applyProfile: 'profiles:apply',
   dismissSuggestion: 'suggestions:dismiss',
-  checkTrends: 'trends:check'
+  checkTrends: 'trends:check',
+  getReadiness: 'system:readiness',
+  installRuntime: 'system:install'
 } as const
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC]

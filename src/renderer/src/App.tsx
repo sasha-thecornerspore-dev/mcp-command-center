@@ -7,8 +7,9 @@ import { CatalogView } from './views/Catalog'
 import { Assistant } from './views/Assistant'
 import { Profiles } from './views/Profiles'
 import { Settings } from './views/Settings'
+import { Setup } from './views/Setup'
 
-type Tab = 'dashboard' | 'matrix' | 'catalog' | 'assistant' | 'profiles' | 'settings'
+type Tab = 'dashboard' | 'matrix' | 'catalog' | 'assistant' | 'profiles' | 'setup' | 'settings'
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: '◉' },
@@ -16,6 +17,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'catalog', label: 'Catalog', icon: '⬡' },
   { id: 'assistant', label: 'AI Assistant', icon: '✦' },
   { id: 'profiles', label: 'Profiles', icon: '❏' },
+  { id: 'setup', label: 'Setup', icon: '⚑' },
   { id: 'settings', label: 'Settings', icon: '⚙' }
 ]
 
@@ -51,7 +53,7 @@ function Shell(): React.JSX.Element {
             </button>
           ))}
         </nav>
-        <div className="p-4 text-xs text-muted border-t border-edge">v0.1.2 · local control plane</div>
+        <div className="p-4 text-xs text-muted border-t border-edge">v0.1.3 · local control plane</div>
       </aside>
 
       <main className="flex-1 overflow-auto">
@@ -68,6 +70,7 @@ function Shell(): React.JSX.Element {
             {tab === 'catalog' && <CatalogView />}
             {tab === 'assistant' && <Assistant />}
             {tab === 'profiles' && <Profiles />}
+            {tab === 'setup' && <Setup />}
             {tab === 'settings' && <Settings />}
           </div>
         )}

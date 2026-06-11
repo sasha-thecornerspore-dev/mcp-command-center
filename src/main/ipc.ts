@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import { IPC } from '../shared/types'
 import type { ConnectionPlan, Profile, Preferences } from '../shared/types'
 import type { Services } from './services'
+import { getReadiness, runInstall } from './services/systemReadiness'
 
 /** Register every IPC handler against the shared Services instance. */
 export function registerIpc(services: Services): void {
@@ -69,4 +70,10 @@ export function registerIpc(services: Services): void {
   ipcMain.handle(IPC.dismissSuggestion, (_e, id: string) => services.store.dismissSuggestion(id))
 
   ipcMain.handle(IPC.checkTrends, () => services.trends.check())
+
+  ipcMain.handle(IPC.getReadiness, () => getReadiness())
+
+  ipcMain.handle(IPC.installRuntime, (_e, runtimeId: string, command: string) =>
+    runInstall(runtimeId, command)
+  )
 }

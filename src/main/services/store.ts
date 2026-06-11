@@ -13,7 +13,8 @@ const DEFAULT_PREFS: Preferences = {
     scanner: true
   } as Record<CatalogSource, boolean>,
   dismissedSuggestionIds: [],
-  favoriteServerIds: []
+  favoriteServerIds: [],
+  baseBuild: 'standard'
 }
 
 interface Persisted {

@@ -42,7 +42,10 @@ const api: McpApi = {
     ipcRenderer.invoke(IPC.applyProfile, profileId, clientIds),
   dismissSuggestion: (id: string): Promise<Suggestion[]> =>
     ipcRenderer.invoke(IPC.dismissSuggestion, id),
-  checkTrends: (): Promise<Suggestion[]> => ipcRenderer.invoke(IPC.checkTrends)
+  checkTrends: (): Promise<Suggestion[]> => ipcRenderer.invoke(IPC.checkTrends),
+  getReadiness: () => ipcRenderer.invoke(IPC.getReadiness),
+  installRuntime: (runtimeId: string, command: string) =>
+    ipcRenderer.invoke(IPC.installRuntime, runtimeId, command)
 }
 
 export type MccApi = typeof api

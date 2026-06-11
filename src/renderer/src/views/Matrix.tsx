@@ -8,7 +8,7 @@ import type { ConnectionPlan } from '@shared/types'
 type Action = 'connect' | 'disconnect'
 
 export function Matrix(): React.JSX.Element {
-  const { state, reload } = useAppState()
+  const { state, reload, readiness } = useAppState()
   const [pending, setPending] = useState<Record<string, Action>>({})
   const [plan, setPlan] = useState<ConnectionPlan | null>(null)
   const [filter, setFilter] = useState('')
@@ -30,6 +30,15 @@ export function Matrix(): React.JSX.Element {
   }, [state, filter])
 
   if (!state) return <Spinner />
+
+  // A server whose host runtime is missing can be wired but won't launch — flag it.
+  const runtimeGap = (runtime?: string): string | null => {
+    if (!readiness || !runtime || runtime === 'none') return null
+    if (runtime === 'node' && !readiness.ready.node) return 'needs Node'
+    if (runtime === 'python' && !readiness.ready.python) return 'needs uv'
+    if (runtime === 'docker' && !readiness.ready.docker) return 'needs Docker'
+    return null
+  }
 
   const isConnected = (clientId: string, serverId: string): boolean =>
     state.clients.find((c) => c.id === clientId)?.servers.some((s) => s.id === serverId) ?? false
@@ -116,7 +125,10 @@ export function Matrix(): React.JSX.Element {
             {servers.map((s) => (
               <tr key={s.id} className="border-t border-edge hover:bg-panel2/40">
                 <td className="px-4 py-2 sticky left-0 bg-panel z-10">
-                  <div className="font-medium text-gray-100">{s.name}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-100">{s.name}</span>
+                    {runtimeGap(s.runtime) && <Badge tone="warn">{runtimeGap(s.runtime)}</Badge>}
+                  </div>
                   <div className="text-xs text-muted">{s.tags.slice(0, 3).join(' · ')}</div>
                 </td>
                 {clients.map((c) => {

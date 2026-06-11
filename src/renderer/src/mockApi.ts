@@ -72,7 +72,8 @@ const state: AppState = {
     catalogRefreshHours: 24,
     sources: { bundled: true, remote: true, 'official-registry': true, web: true, scanner: true },
     dismissedSuggestionIds: [],
-    favoriteServerIds: []
+    favoriteServerIds: [],
+    baseBuild: 'standard'
   },
   profiles: [
     {
@@ -132,6 +133,57 @@ export function createMockApi(): McpApi {
     saveProfile: () => ok(state.profiles),
     applyProfile: () => ok([]),
     dismissSuggestion: () => ok(suggestions),
-    checkTrends: () => ok(suggestions)
+    checkTrends: () => ok(suggestions),
+    getReadiness: () =>
+      ok({
+        os: 'win32',
+        packageManagers: ['winget'],
+        runtimes: [
+          {
+            id: 'node',
+            name: 'Node.js (npx)',
+            binary: 'node',
+            present: true,
+            version: 'v22.11.0',
+            purpose: 'Runs npx-based MCP servers.',
+            satisfies: 'node'
+          },
+          {
+            id: 'uv',
+            name: 'uv (uvx)',
+            binary: 'uvx',
+            present: false,
+            purpose: 'Runs Python MCP servers (git, fetch, time, sqlite).',
+            satisfies: 'python'
+          },
+          {
+            id: 'git',
+            name: 'Git',
+            binary: 'git',
+            present: true,
+            version: 'git version 2.54.0',
+            purpose: 'Required by the Git MCP server.'
+          },
+          {
+            id: 'docker',
+            name: 'Docker',
+            binary: 'docker',
+            present: false,
+            purpose: 'Container-based servers (full build only).',
+            satisfies: 'docker'
+          }
+        ],
+        routes: [
+          {
+            runtimeId: 'uv',
+            manager: 'winget',
+            command: 'winget install -e --id astral-sh.uv',
+            manualUrl: 'https://docs.astral.sh/uv/',
+            canAutoRun: true
+          }
+        ],
+        ready: { node: true, python: false, docker: false }
+      }),
+    installRuntime: (runtimeId) => ok({ runtimeId, ok: true, output: 'Installed.' })
   }
 }

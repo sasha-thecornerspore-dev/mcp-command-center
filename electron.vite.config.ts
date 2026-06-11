@@ -4,7 +4,9 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()],
+    // Bundle @anthropic-ai/sdk INTO the main process (don't externalize) so the
+    // packaged app ships it — node_modules is not included in the installer.
+    plugins: [externalizeDepsPlugin({ exclude: ['@anthropic-ai/sdk'] })],
     build: {
       rollupOptions: {
         input: { index: resolve(__dirname, 'src/main/index.ts') }

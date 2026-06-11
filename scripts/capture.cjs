@@ -13,7 +13,8 @@ const TABS = [
   ['Connection Matrix', 'matrix'],
   ['Catalog', 'catalog'],
   ['AI Assistant', 'assistant'],
-  ['Profiles', 'profiles']
+  ['Profiles', 'profiles'],
+  ['Setup', 'setup']
 ]
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms))

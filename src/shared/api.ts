@@ -11,7 +11,9 @@ import type {
   Preferences,
   ScanFinding,
   DetectedClient,
-  ServerSpec
+  ServerSpec,
+  SystemReadiness,
+  InstallResult
 } from './types'
 
 export interface McpApi {
@@ -34,4 +36,6 @@ export interface McpApi {
   applyProfile(profileId: string, clientIds: string[]): Promise<ApplyResult[]>
   dismissSuggestion(id: string): Promise<Suggestion[]>
   checkTrends(): Promise<Suggestion[]>
+  getReadiness(): Promise<SystemReadiness>
+  installRuntime(runtimeId: string, command: string): Promise<InstallResult>
 }

@@ -1,6 +1,6 @@
 {
   "name": "mcp-command-center",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A graphical, AI-assisted control plane for connecting AI clients to MCP servers across your system.",
   "author": "OpenClaw Community",
   "license": "MIT",

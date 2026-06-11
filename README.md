@@ -23,6 +23,8 @@ for newly published MCP servers worth adding.
 | ![Dashboard](docs/screenshots/dashboard.png) | ![Connection Matrix](docs/screenshots/matrix.png) |
 | **Catalog** — searchable server library | **AI Assistant** — describe a goal, get a plan |
 | ![Catalog](docs/screenshots/catalog.png) | ![AI Assistant](docs/screenshots/assistant.png) |
+| **Setup** — system readiness + guided runtime install | **Profiles** — reusable bundles |
+| ![Setup](docs/screenshots/setup.png) | ![Profiles](docs/screenshots/profiles.png) |
 
 Regenerate them anytime with `npm run screenshots`.
 
@@ -47,6 +49,18 @@ failure. Secrets (API tokens, the Anthropic key) are stored encrypted in your OS
 Electron `safeStorage` — never in plaintext configs.
 
 ---
+
+## ✅ Requirements
+
+**The app is fully self-contained** — the installer bundles the Electron runtime, the app, the
+Anthropic SDK, and the server registry. Nothing else is needed to install and open it.
+
+**The MCP servers it wires need a host runtime**, because your AI *client* launches them, not this
+app: npx-based servers need **Node.js**, Python servers (git, fetch, time, sqlite) need **uv**, and
+container servers need **Docker**. The **Setup** tab examines your system, lets you choose a base
+build (**Minimal** = Node · **Standard** = Node + uv · **Full** = + Docker), and installs any
+missing runtime via your package manager with one click (or a copy-paste command). See
+[docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) for the full breakdown.
 
 ## 🚀 Install
 

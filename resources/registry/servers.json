@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "updated": "2026-06-11",
   "servers": [
     {
@@ -9,6 +9,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "${ROOT_DIR}"],
+      "runtime": "node",
       "tags": ["files", "official", "core"],
       "source": "bundled",
       "homepage": "https://github.com/modelcontextprotocol/servers"
@@ -18,8 +19,9 @@
       "name": "Git",
       "description": "Inspect and operate on local Git repositories.",
       "transport": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-git"],
+      "command": "uvx",
+      "args": ["mcp-server-git"],
+      "runtime": "python",
       "tags": ["dev", "git", "official"],
       "source": "bundled",
       "homepage": "https://github.com/modelcontextprotocol/servers"
@@ -31,6 +33,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-github"],
+      "runtime": "node",
       "env": {},
       "requiredSecrets": [
         {
@@ -52,6 +55,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "runtime": "node",
       "tags": ["memory", "official", "core"],
       "source": "bundled",
       "homepage": "https://github.com/modelcontextprotocol/servers"
@@ -63,6 +67,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "runtime": "node",
       "tags": ["reasoning", "official"],
       "source": "bundled",
       "homepage": "https://github.com/modelcontextprotocol/servers"
@@ -72,8 +77,9 @@
       "name": "Fetch",
       "description": "Fetch and convert web pages to clean markdown.",
       "transport": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "command": "uvx",
+      "args": ["mcp-server-fetch"],
+      "runtime": "python",
       "tags": ["web", "official", "core"],
       "source": "bundled",
       "homepage": "https://github.com/modelcontextprotocol/servers"
@@ -85,6 +91,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+      "runtime": "node",
       "tags": ["web", "automation"],
       "source": "bundled",
       "homepage": "https://github.com/modelcontextprotocol/servers"
@@ -96,6 +103,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "runtime": "node",
       "requiredSecrets": [
         {
           "key": "BRAVE_API_KEY",
@@ -116,6 +124,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-postgres", "${POSTGRES_URL}"],
+      "runtime": "node",
       "requiredSecrets": [
         {
           "key": "POSTGRES_URL",
@@ -134,8 +143,9 @@
       "name": "SQLite",
       "description": "Query and explore a local SQLite database file.",
       "transport": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sqlite", "${SQLITE_PATH}"],
+      "command": "uvx",
+      "args": ["mcp-server-sqlite", "--db-path", "${SQLITE_PATH}"],
+      "runtime": "python",
       "tags": ["data", "database"],
       "source": "bundled",
       "homepage": "https://github.com/modelcontextprotocol/servers"
@@ -147,19 +157,10 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-slack"],
+      "runtime": "node",
       "requiredSecrets": [
-        {
-          "key": "SLACK_BOT_TOKEN",
-          "label": "Slack Bot Token",
-          "target": "env",
-          "required": true
-        },
-        {
-          "key": "SLACK_TEAM_ID",
-          "label": "Slack Team ID",
-          "target": "env",
-          "required": true
-        }
+        { "key": "SLACK_BOT_TOKEN", "label": "Slack Bot Token", "target": "env", "required": true },
+        { "key": "SLACK_TEAM_ID", "label": "Slack Team ID", "target": "env", "required": true }
       ],
       "tags": ["productivity", "chat"],
       "source": "bundled",
@@ -172,6 +173,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-google-maps"],
+      "runtime": "node",
       "requiredSecrets": [
         {
           "key": "GOOGLE_MAPS_API_KEY",
@@ -189,8 +191,9 @@
       "name": "Time",
       "description": "Time and timezone conversion utilities.",
       "transport": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-time"],
+      "command": "uvx",
+      "args": ["mcp-server-time"],
+      "runtime": "python",
       "tags": ["utility"],
       "source": "bundled",
       "homepage": "https://github.com/modelcontextprotocol/servers"
@@ -202,6 +205,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@notionhq/notion-mcp-server"],
+      "runtime": "node",
       "requiredSecrets": [
         {
           "key": "NOTION_TOKEN",
@@ -222,6 +226,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@playwright/mcp@latest"],
+      "runtime": "node",
       "tags": ["web", "automation", "testing"],
       "source": "bundled",
       "homepage": "https://github.com/microsoft/playwright-mcp"
@@ -233,6 +238,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp"],
+      "runtime": "node",
       "tags": ["dev", "docs"],
       "source": "bundled",
       "homepage": "https://github.com/upstash/context7"
@@ -244,6 +250,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-gitlab"],
+      "runtime": "node",
       "requiredSecrets": [
         {
           "key": "GITLAB_PERSONAL_ACCESS_TOKEN",
@@ -263,6 +270,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-gdrive"],
+      "runtime": "node",
       "tags": ["productivity", "files"],
       "source": "bundled",
       "homepage": "https://github.com/modelcontextprotocol/servers"
@@ -274,6 +282,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "exa-mcp-server"],
+      "runtime": "node",
       "requiredSecrets": [
         { "key": "EXA_API_KEY", "label": "Exa API Key", "target": "env", "required": true }
       ],
@@ -288,6 +297,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "tavily-mcp"],
+      "runtime": "node",
       "requiredSecrets": [
         { "key": "TAVILY_API_KEY", "label": "Tavily API Key", "target": "env", "required": true }
       ],
@@ -302,6 +312,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "firecrawl-mcp"],
+      "runtime": "node",
       "requiredSecrets": [
         {
           "key": "FIRECRAWL_API_KEY",
@@ -321,6 +332,7 @@
       "transport": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-everything"],
+      "runtime": "node",
       "tags": ["test", "official"],
       "source": "bundled",
       "homepage": "https://github.com/modelcontextprotocol/servers"
