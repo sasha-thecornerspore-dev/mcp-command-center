@@ -1,0 +1,252 @@
+{
+  "version": 1,
+  "updated": "2026-06-11",
+  "servers": [
+    {
+      "id": "filesystem",
+      "name": "Filesystem",
+      "description": "Read/write access to a sandboxed set of local directories.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${ROOT_DIR}"],
+      "tags": ["files", "official", "core"],
+      "source": "bundled",
+      "homepage": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "git",
+      "name": "Git",
+      "description": "Inspect and operate on local Git repositories.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-git"],
+      "tags": ["dev", "git", "official"],
+      "source": "bundled",
+      "homepage": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "github",
+      "name": "GitHub",
+      "description": "Manage repos, issues, and PRs through the GitHub API.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {},
+      "requiredSecrets": [
+        {
+          "key": "GITHUB_PERSONAL_ACCESS_TOKEN",
+          "label": "GitHub Personal Access Token",
+          "target": "env",
+          "required": true,
+          "help": "Create at github.com/settings/tokens"
+        }
+      ],
+      "tags": ["dev", "git", "official"],
+      "source": "bundled",
+      "homepage": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "memory",
+      "name": "Memory",
+      "description": "Persistent knowledge-graph memory across sessions.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "tags": ["memory", "official", "core"],
+      "source": "bundled",
+      "homepage": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "sequential-thinking",
+      "name": "Sequential Thinking",
+      "description": "Structured step-by-step reasoning scratchpad.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "tags": ["reasoning", "official"],
+      "source": "bundled",
+      "homepage": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "fetch",
+      "name": "Fetch",
+      "description": "Fetch and convert web pages to clean markdown.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "tags": ["web", "official", "core"],
+      "source": "bundled",
+      "homepage": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "puppeteer",
+      "name": "Puppeteer",
+      "description": "Headless browser automation and screenshots.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+      "tags": ["web", "automation"],
+      "source": "bundled",
+      "homepage": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "brave-search",
+      "name": "Brave Search",
+      "description": "Web and local search via the Brave Search API.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "requiredSecrets": [
+        {
+          "key": "BRAVE_API_KEY",
+          "label": "Brave Search API Key",
+          "target": "env",
+          "required": true,
+          "help": "Get one at brave.com/search/api"
+        }
+      ],
+      "tags": ["web", "search"],
+      "source": "bundled",
+      "homepage": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "postgres",
+      "name": "PostgreSQL",
+      "description": "Read-only SQL queries against a PostgreSQL database.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "${POSTGRES_URL}"],
+      "requiredSecrets": [
+        {
+          "key": "POSTGRES_URL",
+          "label": "PostgreSQL connection URL",
+          "target": "env",
+          "required": true,
+          "help": "postgresql://user:pass@host:5432/db"
+        }
+      ],
+      "tags": ["data", "database"],
+      "source": "bundled",
+      "homepage": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "sqlite",
+      "name": "SQLite",
+      "description": "Query and explore a local SQLite database file.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sqlite", "${SQLITE_PATH}"],
+      "tags": ["data", "database"],
+      "source": "bundled",
+      "homepage": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "slack",
+      "name": "Slack",
+      "description": "Post messages and read channels in a Slack workspace.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-slack"],
+      "requiredSecrets": [
+        {
+          "key": "SLACK_BOT_TOKEN",
+          "label": "Slack Bot Token",
+          "target": "env",
+          "required": true
+        },
+        {
+          "key": "SLACK_TEAM_ID",
+          "label": "Slack Team ID",
+          "target": "env",
+          "required": true
+        }
+      ],
+      "tags": ["productivity", "chat"],
+      "source": "bundled",
+      "homepage": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "google-maps",
+      "name": "Google Maps",
+      "description": "Geocoding, directions, and place search.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-google-maps"],
+      "requiredSecrets": [
+        {
+          "key": "GOOGLE_MAPS_API_KEY",
+          "label": "Google Maps API Key",
+          "target": "env",
+          "required": true
+        }
+      ],
+      "tags": ["maps", "geo"],
+      "source": "bundled",
+      "homepage": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "time",
+      "name": "Time",
+      "description": "Time and timezone conversion utilities.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-time"],
+      "tags": ["utility"],
+      "source": "bundled",
+      "homepage": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "notion",
+      "name": "Notion",
+      "description": "Read and update Notion pages and databases.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "requiredSecrets": [
+        {
+          "key": "NOTION_TOKEN",
+          "label": "Notion Integration Token",
+          "target": "env",
+          "required": true,
+          "help": "Create an internal integration at notion.so/my-integrations"
+        }
+      ],
+      "tags": ["productivity", "docs"],
+      "source": "bundled",
+      "homepage": "https://github.com/makenotion/notion-mcp-server"
+    },
+    {
+      "id": "playwright",
+      "name": "Playwright",
+      "description": "Cross-browser automation and end-to-end testing.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"],
+      "tags": ["web", "automation", "testing"],
+      "source": "bundled",
+      "homepage": "https://github.com/microsoft/playwright-mcp"
+    },
+    {
+      "id": "context7",
+      "name": "Context7",
+      "description": "Up-to-date library and framework documentation lookups.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "tags": ["dev", "docs"],
+      "source": "bundled",
+      "homepage": "https://github.com/upstash/context7"
+    },
+    {
+      "id": "everything",
+      "name": "Everything (reference)",
+      "description": "Reference server exercising all MCP features; great for testing.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-everything"],
+      "tags": ["test", "official"],
+      "source": "bundled",
+      "homepage": "https://github.com/modelcontextprotocol/servers"
+    }
+  ]
+}

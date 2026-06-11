@@ -1,0 +1,33 @@
+appId: com.openclaw.mcpcommandcenter
+productName: MCP Command Center
+copyright: Copyright © 2026 OpenClaw Community
+directories:
+  output: release
+  buildResources: resources
+files:
+  - out/**/*
+  - package.json
+extraResources:
+  - from: resources/registry
+    to: registry
+win:
+  target:
+    - nsis
+    - portable
+  icon: resources/icon.png
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: MCP Command Center
+mac:
+  target:
+    - dmg
+    - zip
+  category: public.app-category.developer-tools
+  icon: resources/icon.png
+linux:
+  target:
+    - AppImage
+  category: Development
