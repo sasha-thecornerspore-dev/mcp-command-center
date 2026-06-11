@@ -9,3 +9,5 @@ release/
 .env.local
 coverage/
 .vite/
+
+*.tsbuildinfo

@@ -13,6 +13,21 @@ for newly published MCP servers worth adding.
 
 ---
 
+## 📸 Screenshots
+
+> Captured from the running app with representative sample data.
+
+|  |  |
+|---|---|
+| **Dashboard** — detected clients, live counts, suggestions | **Connection Matrix** — clients × servers, click to wire |
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Connection Matrix](docs/screenshots/matrix.png) |
+| **Catalog** — searchable server library | **AI Assistant** — describe a goal, get a plan |
+| ![Catalog](docs/screenshots/catalog.png) | ![AI Assistant](docs/screenshots/assistant.png) |
+
+Regenerate them anytime with `npm run screenshots`.
+
+---
+
 ## ✨ What it does
 
 | Pillar | What you get |

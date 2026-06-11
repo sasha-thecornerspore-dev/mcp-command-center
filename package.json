@@ -1,6 +1,6 @@
 {
   "name": "mcp-command-center",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A graphical, AI-assisted control plane for connecting AI clients to MCP servers across your system.",
   "author": "OpenClaw Community",
   "license": "MIT",
@@ -20,6 +20,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",
     "test:watch": "vitest",
+    "screenshots": "electron-vite build && electron scripts/capture.cjs",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
     "dist:win": "npm run build && electron-builder --win",
@@ -32,17 +33,17 @@
     "@types/node": "^22.10.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react": "^5.2.0",
     "autoprefixer": "^10.4.20",
-    "electron": "^33.2.0",
-    "electron-builder": "^24.13.3",
-    "electron-vite": "^2.3.0",
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.2",
+    "electron-vite": "^5.0.0",
     "postcss": "^8.4.49",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.7.2",
-    "vite": "^5.4.11",
-    "vitest": "^2.1.6"
+    "vite": "^7.3.5",
+    "vitest": "^4.1.8"
   }
 }

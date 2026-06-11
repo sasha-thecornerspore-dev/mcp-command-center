@@ -12,9 +12,10 @@ import type {
   DetectedClient,
   ServerSpec
 } from '../shared/types'
+import type { McpApi } from '../shared/api'
 
 /** Typed bridge exposed to the renderer as window.mcc. */
-const api = {
+const api: McpApi = {
   getState: (): Promise<AppState> => ipcRenderer.invoke(IPC.getState),
   detectClients: (): Promise<DetectedClient[]> => ipcRenderer.invoke(IPC.detectClients),
   refreshCatalog: (): Promise<ServerSpec[]> => ipcRenderer.invoke(IPC.refreshCatalog),

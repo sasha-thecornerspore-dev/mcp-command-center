@@ -238,6 +238,83 @@
       "homepage": "https://github.com/upstash/context7"
     },
     {
+      "id": "gitlab",
+      "name": "GitLab",
+      "description": "Manage GitLab projects, issues, and merge requests.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gitlab"],
+      "requiredSecrets": [
+        {
+          "key": "GITLAB_PERSONAL_ACCESS_TOKEN",
+          "label": "GitLab Personal Access Token",
+          "target": "env",
+          "required": true
+        }
+      ],
+      "tags": ["dev", "git"],
+      "source": "bundled",
+      "homepage": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "gdrive",
+      "name": "Google Drive",
+      "description": "Search and read files from Google Drive.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gdrive"],
+      "tags": ["productivity", "files"],
+      "source": "bundled",
+      "homepage": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "exa",
+      "name": "Exa Search",
+      "description": "Neural web search built for AI agents.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "exa-mcp-server"],
+      "requiredSecrets": [
+        { "key": "EXA_API_KEY", "label": "Exa API Key", "target": "env", "required": true }
+      ],
+      "tags": ["web", "search"],
+      "source": "bundled",
+      "homepage": "https://github.com/exa-labs/exa-mcp-server"
+    },
+    {
+      "id": "tavily",
+      "name": "Tavily",
+      "description": "Search and extract web content via the Tavily API.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "tavily-mcp"],
+      "requiredSecrets": [
+        { "key": "TAVILY_API_KEY", "label": "Tavily API Key", "target": "env", "required": true }
+      ],
+      "tags": ["web", "search"],
+      "source": "bundled",
+      "homepage": "https://github.com/tavily-ai/tavily-mcp"
+    },
+    {
+      "id": "firecrawl",
+      "name": "Firecrawl",
+      "description": "Crawl and scrape websites into clean, structured data.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "requiredSecrets": [
+        {
+          "key": "FIRECRAWL_API_KEY",
+          "label": "Firecrawl API Key",
+          "target": "env",
+          "required": true
+        }
+      ],
+      "tags": ["web", "scraping"],
+      "source": "bundled",
+      "homepage": "https://github.com/mendableai/firecrawl-mcp-server"
+    },
+    {
       "id": "everything",
       "name": "Everything (reference)",
       "description": "Reference server exercising all MCP features; great for testing.",

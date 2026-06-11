@@ -1,9 +1,9 @@
 /// <reference types="vite/client" />
-import type { MccApi } from '../../preload'
+import type { McpApi } from '@shared/api'
 
 declare global {
   interface Window {
-    mcc: MccApi
+    mcc: McpApi
   }
 }
 

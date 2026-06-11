@@ -95,6 +95,15 @@ app.whenReady().then(() => {
   createWindow()
   createTray()
 
+  // Smoke-test hook: MCC_SMOKE=1 boots the app then cleanly exits, so CI/dev can
+  // verify the main process initializes without leaving a window open.
+  if (process.env.MCC_SMOKE) {
+    setTimeout(() => {
+      isQuitting = true
+      app.quit()
+    }, 4000)
+  }
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })

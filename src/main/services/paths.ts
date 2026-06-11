@@ -77,6 +77,23 @@ export function knownClientLocations(): ClientLocation[] {
       processHints: []
     },
     {
+      id: 'cline',
+      name: 'Cline (VS Code)',
+      format: 'generic-mcpServers',
+      candidates: [
+        join(
+          ad,
+          'Code',
+          'User',
+          'globalStorage',
+          'saoudrizwan.claude-dev',
+          'settings',
+          'cline_mcp_settings.json'
+        )
+      ],
+      processHints: plat === 'win32' ? ['Code.exe'] : ['Code', 'code']
+    },
+    {
       id: 'zed',
       name: 'Zed',
       format: 'zed',
