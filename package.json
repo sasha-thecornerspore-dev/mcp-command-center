@@ -5,7 +5,14 @@
   "author": "OpenClaw Community",
   "license": "MIT",
   "main": "./out/main/index.js",
-  "homepage": "https://github.com/jeffschatz/mcp-command-center",
+  "homepage": "https://github.com/sasha-thecornerspore-dev/mcp-command-center",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sasha-thecornerspore-dev/mcp-command-center.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sasha-thecornerspore-dev/mcp-command-center/issues"
+  },
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
