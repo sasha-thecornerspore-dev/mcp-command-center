@@ -4,8 +4,23 @@ By default the release workflow produces **unsigned** installers. On first launc
 will see Windows SmartScreen ("Windows protected your PC" → *More info* → *Run anyway*) or
 macOS Gatekeeper (right‑click → *Open*). Signing removes those warnings.
 
-Signing turns on **automatically** once the relevant repository secrets exist — no code
-changes needed. The release workflow already passes them through to `electron-builder`.
+To enable signing in CI, add the secrets below **and** uncomment the matching `env:`
+block on the *Build installers* step in `.github/workflows/release.yml`:
+
+```yaml
+      - name: Build installers
+        run: npm run ${{ matrix.target }}
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+```
+
+> Only add that `env:` block once the secrets actually exist — passing an empty
+> `CSC_LINK` makes electron-builder treat `""` as a certificate path and fail the macOS
+> build. With no block (the default), builds are unsigned and always succeed.
 
 ## Windows (Authenticode)
 

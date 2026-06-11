@@ -22,9 +22,9 @@
     "test:watch": "vitest",
     "screenshots": "electron-vite build && electron scripts/capture.cjs",
     "pack": "npm run build && electron-builder --dir",
-    "dist": "npm run build && electron-builder",
-    "dist:win": "npm run build && electron-builder --win",
-    "dist:mac": "npm run build && electron-builder --mac"
+    "dist": "npm run build && electron-builder -p never",
+    "dist:win": "npm run build && electron-builder --win -p never",
+    "dist:mac": "npm run build && electron-builder --mac -p never"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1"
