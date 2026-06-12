@@ -65,6 +65,15 @@ export class SecretStore {
     return Boolean(this.cache[key])
   }
 
+  delete(key: string): void {
+    delete this.cache[key]
+    this.persist()
+  }
+
+  keysWithPrefix(prefix: string): string[] {
+    return Object.keys(this.cache).filter((k) => k.startsWith(prefix))
+  }
+
   /** Resolve a set of keys into a plain map (for injection at apply time). */
   resolve(keys: string[]): Record<string, string> {
     const out: Record<string, string> = {}
