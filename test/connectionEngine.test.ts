@@ -48,7 +48,7 @@ describe('ConnectionEngine', () => {
     engine = new ConnectionEngine(
       backupDir,
       () => [client()],
-      (keys) => Object.fromEntries(keys.map((k) => [k, 'secret-' + k]))
+      (_serverId, keys) => Object.fromEntries(keys.map((k) => [k, 'secret-' + k]))
     )
   })
 
@@ -141,5 +141,39 @@ describe('ConnectionEngine', () => {
     expect(Object.keys(written.mcpServers).sort()).toEqual(['fetch', 'memory'])
     // one backup for the batch
     expect(engine.listBackups('claude-desktop')).toHaveLength(1)
+  })
+
+  it('injects serverId-resolved secrets into env for claude-desktop and claude-code formats', () => {
+    const mk = (format: 'claude-desktop' | 'claude-code', path: string): DetectedClient => ({
+      id: format,
+      name: format,
+      format,
+      configPath: path,
+      installed: true,
+      configExists: false,
+      servers: []
+    })
+    const cdPath = join(dir, 'cd.json')
+    const ccPath = join(dir, 'cc.json')
+    const eng = new ConnectionEngine(
+      join(dir, 'b2'),
+      () => [mk('claude-desktop', cdPath), mk('claude-code', ccPath)],
+      (serverId, keys) => Object.fromEntries(keys.map((k) => [k, `${serverId}:root:${k}`]))
+    )
+    const plan: ConnectionPlan = {
+      id: 'p2',
+      title: 't',
+      items: [
+        { clientId: 'claude-desktop', server: GH, action: 'connect' },
+        { clientId: 'claude-code', server: GH, action: 'connect' }
+      ],
+      missingSecrets: []
+    }
+    const results = eng.apply(plan)
+    expect(results.every((r) => r.ok)).toBe(true)
+    for (const p of [cdPath, ccPath]) {
+      const written = JSON.parse(readFileSync(p, 'utf8'))
+      expect(written.mcpServers.github.env.TOKEN).toBe('github:root:TOKEN')
+    }
   })
 })

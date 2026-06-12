@@ -40,7 +40,7 @@ export class Services {
     this.engine = new ConnectionEngine(
       defaultBackupDir(paths.userData),
       () => this.clientsCache,
-      (keys) => this.secrets.resolve(keys)
+      (_serverId, keys) => this.secrets.resolve(keys)
     )
     this.advisor = new AiAdvisor(this.secrets, this.catalog)
     this.trends = new TrendWatcher(this.catalog, this.store)
