@@ -4,6 +4,7 @@ import { api } from '../api'
 import { Button, Badge, Spinner } from '../components/ui'
 import { PlanReviewModal } from '../components/PlanReviewModal'
 import { IdentitySwitcher } from '../components/IdentitySwitcher'
+import { IdentityModal } from '../components/IdentityModal'
 import type { ConnectionPlan, ServerSpec, SwitchResult } from '@shared/types'
 
 type Action = 'connect' | 'disconnect'
@@ -205,6 +206,15 @@ export function Matrix(): React.JSX.Element {
             setPending({})
             void reload()
           }}
+        />
+      )}
+      {identityServer && (
+        <IdentityModal
+          server={identityServer}
+          config={state.identityConfigs.find((c) => c.serverId === identityServer.id) ?? null}
+          secretsPresent={state.identitySecretsPresent}
+          onClose={() => setIdentityServer(null)}
+          onSaved={() => void reload()}
         />
       )}
     </div>
