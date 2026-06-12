@@ -3,7 +3,8 @@ import { useAppState } from '../state'
 import { api } from '../api'
 import { Button, Badge, Spinner } from '../components/ui'
 import { PlanReviewModal } from '../components/PlanReviewModal'
-import type { ConnectionPlan } from '@shared/types'
+import { IdentitySwitcher } from '../components/IdentitySwitcher'
+import type { ConnectionPlan, ServerSpec, SwitchResult } from '@shared/types'
 
 type Action = 'connect' | 'disconnect'
 
@@ -12,6 +13,8 @@ export function Matrix(): React.JSX.Element {
   const [pending, setPending] = useState<Record<string, Action>>({})
   const [plan, setPlan] = useState<ConnectionPlan | null>(null)
   const [filter, setFilter] = useState('')
+  const [identityServer, setIdentityServer] = useState<ServerSpec | null>(null)
+  const [switchNote, setSwitchNote] = useState<string | null>(null)
 
   const clients = useMemo(
     () => (state ? state.clients.filter((c) => c.installed) : []),
@@ -78,6 +81,17 @@ export function Matrix(): React.JSX.Element {
 
   const pendingCount = Object.keys(pending).length
 
+  function describeSwitch(r: SwitchResult, serverName: string, label: string): string {
+    if (r.blocked === 'health-check')
+      return `${serverName}: health check failed (${r.healthCheck?.status ?? r.healthCheck?.error}) — switch blocked`
+    if (r.blocked === 'missing-secrets')
+      return `${serverName}: missing secrets ${r.missingKeys?.join(', ')} — switch blocked`
+    if (r.blocked === 'not-found') return `${serverName}: identity not found`
+    const failed = r.applyResults.filter((a) => !a.ok)
+    if (failed.length) return `${serverName} → ${label}: ${failed.length} client(s) failed to update`
+    return `${serverName} → ${label}: applied to ${r.applyResults.length} client(s) — restart them to pick it up`
+  }
+
   return (
     <div className="space-y-4">
       <header className="flex items-center justify-between">
@@ -100,6 +114,15 @@ export function Matrix(): React.JSX.Element {
           </Button>
         </div>
       </header>
+
+      {switchNote && (
+        <div className="flex items-center justify-between rounded-md border border-edge bg-panel2 px-3 py-2 text-sm text-gray-300">
+          <span>{switchNote}</span>
+          <button className="text-muted hover:text-gray-200" onClick={() => setSwitchNote(null)}>
+            ✕
+          </button>
+        </div>
+      )}
 
       {clients.length === 0 && (
         <div className="text-muted text-sm">
@@ -130,6 +153,29 @@ export function Matrix(): React.JSX.Element {
                     {runtimeGap(s.runtime) && <Badge tone="warn">{runtimeGap(s.runtime)}</Badge>}
                   </div>
                   <div className="text-xs text-muted">{s.tags.slice(0, 3).join(' · ')}</div>
+                  {(() => {
+                    const cfg = state.identityConfigs.find((c) => c.serverId === s.id)
+                    return cfg ? (
+                      <div className="mt-1">
+                        <IdentitySwitcher
+                          config={cfg}
+                          onManage={() => setIdentityServer(s)}
+                          onSwitched={(r, label) => {
+                            setSwitchNote(describeSwitch(r, s.name, label))
+                            void reload()
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setIdentityServer(s)}
+                        className="mt-1 text-[11px] text-muted hover:text-gray-300"
+                        title="Define credential identities for this server"
+                      >
+                        + identities
+                      </button>
+                    )
+                  })()}
                 </td>
                 {clients.map((c) => {
                   const st = cellState(c.id, s.id)
