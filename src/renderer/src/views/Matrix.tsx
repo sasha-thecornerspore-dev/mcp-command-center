@@ -165,6 +165,7 @@ export function Matrix(): React.JSX.Element {
                             setSwitchNote(describeSwitch(r, s.name, label))
                             void reload()
                           }}
+                          onError={(msg) => setSwitchNote(`${s.name}: ${msg}`)}
                         />
                       </div>
                     ) : (
@@ -210,6 +211,7 @@ export function Matrix(): React.JSX.Element {
       )}
       {identityServer && (
         <IdentityModal
+          key={identityServer.id}
           server={identityServer}
           config={state.identityConfigs.find((c) => c.serverId === identityServer.id) ?? null}
           secretsPresent={state.identitySecretsPresent}

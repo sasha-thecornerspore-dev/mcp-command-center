@@ -30,8 +30,10 @@ export function IdentityModal({
   const [values, setValues] = useState<Record<string, Record<string, string>>>({})
   const [testResult, setTestResult] = useState<Record<string, HealthCheckResult>>({})
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const secretKeys = (server.requiredSecrets ?? []).map((r) => r.key)
+  const invalid = identities.some((i) => !i.label.trim())
 
   function setIdentity(idx: number, patch: Partial<ServerIdentity>): void {
     setIdentities((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)))
@@ -54,6 +56,7 @@ export function IdentityModal({
   }
 
   async function save(): Promise<void> {
+    setError(null)
     setSaving(true)
     try {
       await api.saveIdentities(
@@ -62,18 +65,26 @@ export function IdentityModal({
       )
       onSaved()
       onClose()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setSaving(false)
     }
   }
 
   async function test(identity: ServerIdentity): Promise<void> {
-    await api.saveIdentities(
-      { serverId: server.id, identities, activeIdentityId: activeId },
-      values
-    )
-    const r = await api.testIdentity(server.id, identity.id)
-    setTestResult((prev) => ({ ...prev, [identity.id]: r }))
+    setError(null)
+    try {
+      await api.saveIdentities(
+        { serverId: server.id, identities, activeIdentityId: activeId },
+        values
+      )
+      onSaved()
+      const r = await api.testIdentity(server.id, identity.id)
+      setTestResult((prev) => ({ ...prev, [identity.id]: r }))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    }
   }
 
   return (
@@ -106,7 +117,7 @@ export function IdentityModal({
                   </Badge>
                 )}
                 <div className="ml-auto flex gap-2">
-                  <Button onClick={() => void test(identity)}>Test</Button>
+                  <Button onClick={() => void test(identity)} disabled={invalid}>Test</Button>
                   <Button variant="danger" onClick={() => removeIdentity(idx)}>
                     Remove
                   </Button>
@@ -225,6 +236,7 @@ export function IdentityModal({
             </div>
           )
         })}
+        {error && <div className="text-xs text-bad">{error}</div>}
         <div className="flex items-center justify-between">
           <Button variant="ghost" onClick={addIdentity}>
             + Add identity
@@ -234,7 +246,7 @@ export function IdentityModal({
             <Button
               variant="primary"
               onClick={() => void save()}
-              disabled={saving || identities.some((i) => !i.label.trim())}
+              disabled={saving || invalid}
             >
               {saving ? 'Saving…' : 'Save'}
             </Button>

@@ -7,11 +7,13 @@ import type { ServerIdentityConfig, SwitchResult } from '@shared/types'
 export function IdentitySwitcher({
   config,
   onManage,
-  onSwitched
+  onSwitched,
+  onError
 }: {
   config: ServerIdentityConfig
   onManage: () => void
   onSwitched: (result: SwitchResult, identityLabel: string) => void
+  onError?: (message: string) => void
 }): React.JSX.Element {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
@@ -26,6 +28,8 @@ export function IdentitySwitcher({
       setVerified(result.blocked === undefined && result.healthCheck?.ok === true)
       onSwitched(result, label)
       if (!result.blocked) setOpen(false)
+    } catch (e) {
+      onError?.(e instanceof Error ? e.message : String(e))
     } finally {
       setBusy(null)
     }
