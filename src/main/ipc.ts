@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import { IPC } from '../shared/types'
-import type { ConnectionPlan, Profile, Preferences } from '../shared/types'
+import type { ConnectionPlan, Profile, Preferences, ServerIdentityConfig } from '../shared/types'
 import type { Services } from './services'
 import { getReadiness, runInstall } from './services/systemReadiness'
 
@@ -66,6 +66,25 @@ export function registerIpc(services: Services): void {
     const plan = services.buildProfilePlan(profileId, clientIds)
     return services.engine.apply(plan)
   })
+
+  ipcMain.handle(
+    IPC.saveIdentities,
+    (_e, cfg: ServerIdentityConfig, secretValues?: Record<string, Record<string, string>>) =>
+      services.identities.save(cfg, secretValues)
+  )
+
+  ipcMain.handle(IPC.switchIdentity, (_e, serverId: string, identityId: string) => {
+    services.refreshClients() // ensure latest on-disk state before writing
+    return services.identities.switch(serverId, identityId)
+  })
+
+  ipcMain.handle(IPC.testIdentity, (_e, serverId: string, identityId: string) =>
+    services.identities.test(serverId, identityId)
+  )
+
+  ipcMain.handle(IPC.deleteIdentities, (_e, serverId: string) =>
+    services.identities.delete(serverId)
+  )
 
   ipcMain.handle(IPC.dismissSuggestion, (_e, id: string) => services.store.dismissSuggestion(id))
 

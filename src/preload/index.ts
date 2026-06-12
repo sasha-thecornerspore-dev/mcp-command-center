@@ -10,7 +10,10 @@ import type {
   Preferences,
   ScanFinding,
   DetectedClient,
-  ServerSpec
+  ServerSpec,
+  ServerIdentityConfig,
+  SwitchResult,
+  HealthCheckResult
 } from '../shared/types'
 import type { McpApi } from '../shared/api'
 
@@ -40,6 +43,16 @@ const api: McpApi = {
     ipcRenderer.invoke(IPC.saveProfile, profile),
   applyProfile: (profileId: string, clientIds: string[]): Promise<ApplyResult[]> =>
     ipcRenderer.invoke(IPC.applyProfile, profileId, clientIds),
+  saveIdentities: (
+    cfg: ServerIdentityConfig,
+    secretValues?: Record<string, Record<string, string>>
+  ): Promise<ServerIdentityConfig[]> => ipcRenderer.invoke(IPC.saveIdentities, cfg, secretValues),
+  switchIdentity: (serverId: string, identityId: string): Promise<SwitchResult> =>
+    ipcRenderer.invoke(IPC.switchIdentity, serverId, identityId),
+  testIdentity: (serverId: string, identityId: string): Promise<HealthCheckResult> =>
+    ipcRenderer.invoke(IPC.testIdentity, serverId, identityId),
+  deleteIdentities: (serverId: string): Promise<ServerIdentityConfig[]> =>
+    ipcRenderer.invoke(IPC.deleteIdentities, serverId),
   dismissSuggestion: (id: string): Promise<Suggestion[]> =>
     ipcRenderer.invoke(IPC.dismissSuggestion, id),
   checkTrends: (): Promise<Suggestion[]> => ipcRenderer.invoke(IPC.checkTrends),

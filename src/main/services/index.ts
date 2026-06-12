@@ -16,6 +16,7 @@ import { defaultBackupDir } from './paths'
 import { scanSystem } from './systemScanner'
 import { AiAdvisor } from './aiAdvisor'
 import { TrendWatcher } from './trendWatcher'
+import { IdentityService } from './identities'
 
 export interface AppPaths {
   userData: string
@@ -29,6 +30,7 @@ export class Services {
   readonly secrets: SecretStore
   readonly store: Store
   readonly engine: ConnectionEngine
+  readonly identities: IdentityService
   readonly advisor: AiAdvisor
   readonly trends: TrendWatcher
   private clientsCache: DetectedClient[] = []
@@ -40,7 +42,15 @@ export class Services {
     this.engine = new ConnectionEngine(
       defaultBackupDir(paths.userData),
       () => this.clientsCache,
-      (_serverId, keys) => this.secrets.resolve(keys)
+      (serverId, keys) =>
+        this.identities.resolveForServer(serverId, keys) ?? this.secrets.resolve(keys)
+    )
+    this.identities = new IdentityService(
+      this.store,
+      this.secrets,
+      this.catalog,
+      () => this.clientsCache,
+      this.engine
     )
     this.advisor = new AiAdvisor(this.secrets, this.catalog)
     this.trends = new TrendWatcher(this.catalog, this.store)
@@ -65,8 +75,8 @@ export class Services {
       suggestions: this.store.getSuggestions(),
       preferences: { ...prefs, anthropicApiKeyConfigured: this.secrets.hasApiKey() },
       profiles: this.store.getProfiles(),
-      identityConfigs: [],
-      identitySecretsPresent: {}
+      identityConfigs: this.store.getIdentityConfigs(),
+      identitySecretsPresent: this.identities.secretsPresent()
     }
   }
 
