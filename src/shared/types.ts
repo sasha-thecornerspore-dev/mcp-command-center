@@ -143,6 +143,11 @@ export interface ServerIdentity {
 export interface IdentityHealthCheck {
   url: string
   method?: 'GET' | 'POST' // default GET
+  /**
+   * For 'basic': usernameSecretKey + passwordSecretKey build the header.
+   * For 'bearer': passwordSecretKey holds the token; usernameSecretKey is ignored.
+   * For 'none': both keys are ignored.
+   */
   auth: 'basic' | 'bearer' | 'none'
   /** Secret keys (of this server) used to build the auth header. */
   usernameSecretKey?: string // basic: username side
@@ -154,9 +159,11 @@ export interface IdentityHealthCheck {
 export interface ServerIdentityConfig {
   serverId: string
   identities: ServerIdentity[]
+  /** Id of the active identity; must match one of identities[].id. */
   activeIdentityId: string
 }
 
+/** Result of a health-check HTTP probe. */
 export interface HealthCheckResult {
   ok: boolean
   status?: number
