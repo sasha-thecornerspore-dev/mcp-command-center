@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync } from 'fs'
+import { existsSync, mkdtempSync, rmSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 
@@ -40,5 +40,15 @@ describe('SecretStore identity extensions', () => {
       'identity:opnsense:root:A',
       'identity:opnsense:root:B'
     ])
+  })
+
+  it('deleting an absent key does not create or touch the secrets file', () => {
+    store.delete('never-set')
+    expect(existsSync(join(dir, 'secrets.json'))).toBe(false)
+  })
+
+  it('has() reports empty-string values as present', () => {
+    store.set('EMPTY', '')
+    expect(store.has('EMPTY')).toBe(true)
   })
 })

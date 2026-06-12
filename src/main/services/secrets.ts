@@ -62,10 +62,11 @@ export class SecretStore {
   }
 
   has(key: string): boolean {
-    return Boolean(this.cache[key])
+    return Object.prototype.hasOwnProperty.call(this.cache, key)
   }
 
   delete(key: string): void {
+    if (!Object.prototype.hasOwnProperty.call(this.cache, key)) return
     delete this.cache[key]
     this.persist()
   }
