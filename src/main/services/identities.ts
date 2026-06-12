@@ -20,6 +20,11 @@ export function identityPrefix(serverId: string, identityId?: string): string {
   return identityId ? `identity:${serverId}:${identityId}:` : `identity:${serverId}:`
 }
 
+/** Ids are embedded in colon-delimited secret keys — reject ids that would corrupt parsing. */
+function assertSafeId(id: string, what: string): void {
+  if (!id || id.includes(':')) throw new Error(`invalid ${what} "${id}": must be non-empty and contain no ':'`)
+}
+
 export interface HealthRequestSpec {
   url: string
   method: string
@@ -86,7 +91,6 @@ export interface SecretPort {
   has(key: string): boolean
   delete(key: string): void
   keysWithPrefix(prefix: string): string[]
-  resolve(keys: string[]): Record<string, string>
 }
 
 export interface CatalogPort {
@@ -135,6 +139,8 @@ export class IdentityService {
     cfg: ServerIdentityConfig,
     secretValues?: Record<string, Record<string, string>>
   ): ServerIdentityConfig[] {
+    assertSafeId(cfg.serverId, 'server id')
+    for (const identity of cfg.identities) assertSafeId(identity.id, 'identity id')
     if (cfg.identities.length === 0) return this.delete(cfg.serverId)
     for (const [identityId, values] of Object.entries(secretValues ?? {})) {
       for (const [key, value] of Object.entries(values)) {
@@ -150,6 +156,7 @@ export class IdentityService {
   }
 
   delete(serverId: string): ServerIdentityConfig[] {
+    assertSafeId(serverId, 'server id')
     for (const k of this.secrets.keysWithPrefix(identityPrefix(serverId))) this.secrets.delete(k)
     return this.store.deleteIdentityConfig(serverId)
   }
@@ -183,8 +190,15 @@ export class IdentityService {
     const cfg = this.configFor(serverId)
     const identity = cfg?.identities.find((i) => i.id === identityId)
     if (!identity) return { ok: false, error: 'identity not found' }
-    if (!identity.healthCheck) return { ok: true }
-    const spec = buildHealthRequest(identity.healthCheck, this.identityValues(serverId, identityId))
+    if (!identity.healthCheck) return { ok: true } // no check defined — vacuously ok (callers should not present this as "verified")
+    const referenced = [
+      ...(identity.healthCheck.auth === 'basic' ? [identity.healthCheck.usernameSecretKey] : []),
+      ...(identity.healthCheck.auth !== 'none' ? [identity.healthCheck.passwordSecretKey] : [])
+    ].filter((k): k is string => Boolean(k))
+    const values = this.identityValues(serverId, identityId)
+    const unset = referenced.filter((k) => values[k] == null)
+    if (unset.length) return { ok: false, error: `secret not set: ${unset.join(', ')}` }
+    const spec = buildHealthRequest(identity.healthCheck, values)
     try {
       const { status } = await this.transport(spec)
       return { ok: status >= 200 && status < 300, status }

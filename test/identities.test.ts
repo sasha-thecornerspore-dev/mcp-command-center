@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildHealthRequest, IdentityService, identitySecretKey } from '../src/main/services/identities'
-import type { IdentityHealthCheck, ServerIdentityConfig, ServerSpec, ApplyResult } from '../src/shared/types'
-import type { ConnectionPlan } from '../src/shared/types'
+import type { IdentityHealthCheck, ServerIdentityConfig, ServerSpec, ApplyResult, ConnectionPlan } from '../src/shared/types'
 
 describe('buildHealthRequest', () => {
   const base: IdentityHealthCheck = {
@@ -52,9 +51,7 @@ function fakeSecrets(): {
       set: (k: string, v: string) => void store.set(k, v),
       has: (k: string) => store.has(k),
       delete: (k: string) => void store.delete(k),
-      keysWithPrefix: (p: string) => [...store.keys()].filter((k) => k.startsWith(p)),
-      resolve: (keys: string[]) =>
-        Object.fromEntries(keys.flatMap((k) => (store.has(k) ? [[k, store.get(k)!]] : [])))
+      keysWithPrefix: (p: string) => [...store.keys()].filter((k) => k.startsWith(p))
     }
   }
 }
@@ -115,7 +112,7 @@ function makeService(opts: {
 }) {
   const secrets = fakeSecrets()
   const store = fakeStore(opts.configs ?? [])
-  const applied: ConnectionPlan_[] = []
+  const applied: ConnectionPlan[] = []
   const svc = new IdentityService(
     store.port,
     secrets.port,
@@ -143,9 +140,6 @@ function makeService(opts: {
   )
   return { svc, secrets, store, applied }
 }
-type ConnectionPlan_ = Parameters<
-  ConstructorParameters<typeof IdentityService>[4]['apply']
->[0]
 
 describe('IdentityService resolve/save/delete', () => {
   it('resolveForServer returns active identity values, omitting unset keys', () => {
@@ -200,6 +194,31 @@ describe('IdentityService resolve/save/delete', () => {
       'opnsense:sasha': [],
       'opnsense:root': ['OPNSENSE_API_KEY']
     })
+  })
+
+  it('rejects ids containing colons without touching secrets', () => {
+    const { svc, secrets } = makeService({ configs: [] })
+    secrets.store.set('identity:srv:a:KEY', 'keep')
+    expect(() =>
+      svc.save({ serverId: 'srv', activeIdentityId: 'a:b', identities: [{ id: 'a:b', label: 'x' }] })
+    ).toThrow(/identity id/)
+    expect(() =>
+      svc.save({ serverId: 's:rv', activeIdentityId: 'a', identities: [{ id: 'a', label: 'x' }] })
+    ).toThrow(/server id/)
+    expect(() => svc.delete('s:rv')).toThrow(/server id/)
+    expect(secrets.store.get('identity:srv:a:KEY')).toBe('keep')
+  })
+
+  it('test() reports unset health-check secrets by name instead of probing', async () => {
+    const cfg = structuredClone(TWO_IDS)
+    cfg.identities[0].healthCheck = {
+      url: 'https://fw/x', auth: 'basic',
+      usernameSecretKey: 'OPNSENSE_API_KEY', passwordSecretKey: 'OPNSENSE_API_SECRET'
+    }
+    const { svc } = makeService({ configs: [cfg] })
+    const r = await svc.test('opnsense', 'sasha')
+    expect(r.ok).toBe(false)
+    expect(r.error).toContain('OPNSENSE_API_KEY')
   })
 })
 
@@ -269,5 +288,34 @@ describe('IdentityService.switch', () => {
     const b = makeService({ configs: [structuredClone(TWO_IDS)] })
     expect((await b.svc.switch('nope', 'root')).blocked).toBe('not-found')
     expect((await b.svc.switch('opnsense', 'nope')).blocked).toBe('not-found')
+  })
+
+  it('blocks with the transport error message when the health check cannot connect', async () => {
+    const cfg = structuredClone(TWO_IDS)
+    cfg.identities[1].healthCheck = {
+      url: 'https://fw/api/core/firmware/status',
+      auth: 'basic',
+      usernameSecretKey: 'OPNSENSE_API_KEY',
+      passwordSecretKey: 'OPNSENSE_API_SECRET'
+    }
+    const b = makeService({ configs: [cfg], transportStatus: new Error('ECONNREFUSED') })
+    withSecrets(b)
+    const r = await b.svc.switch('opnsense', 'root')
+    expect(r.blocked).toBe('health-check')
+    expect(r.healthCheck).toEqual({ ok: false, error: 'ECONNREFUSED' })
+    expect(b.applied).toHaveLength(0)
+  })
+
+  it('includes the passing health check in a successful switch result', async () => {
+    const cfg = structuredClone(TWO_IDS)
+    cfg.identities[1].healthCheck = {
+      url: 'https://fw/x', auth: 'basic',
+      usernameSecretKey: 'OPNSENSE_API_KEY', passwordSecretKey: 'OPNSENSE_API_SECRET'
+    }
+    const b = makeService({ configs: [cfg], transportStatus: 204 })
+    withSecrets(b)
+    const r = await b.svc.switch('opnsense', 'root')
+    expect(r.blocked).toBeUndefined()
+    expect(r.healthCheck).toEqual({ ok: true, status: 204 })
   })
 })
