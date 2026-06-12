@@ -44,7 +44,7 @@ export function IdentityModal({
   }
 
   function addIdentity(): void {
-    const id = `id-${Date.now().toString(36)}`
+    const id = `id-${crypto.randomUUID().slice(0, 8)}`
     setIdentities((prev) => [...prev, { id, label: '' }])
   }
 

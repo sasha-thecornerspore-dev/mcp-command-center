@@ -115,6 +115,19 @@ export class IdentityService {
     return this.store.getIdentityConfigs().find((c) => c.serverId === serverId)
   }
 
+  /**
+   * Identity-aware secret presence: true/false when the server has an identity
+   * config (checked against the active identity's namespaced store), undefined
+   * when it doesn't (caller falls back to the plain secret store).
+   */
+  hasSecret(serverId: string, key: string): boolean | undefined {
+    const cfg = this.configFor(serverId)
+    if (!cfg) return undefined
+    const active = cfg.identities.find((i) => i.id === cfg.activeIdentityId)
+    if (!active) return undefined
+    return this.secrets.has(identitySecretKey(serverId, active.id, key))
+  }
+
   /** Active identity's values for the given keys, or undefined if no identity config. */
   resolveForServer(serverId: string, keys: string[]): Record<string, string> | undefined {
     const cfg = this.configFor(serverId)
@@ -194,6 +207,10 @@ export class IdentityService {
     const identity = cfg?.identities.find((i) => i.id === identityId)
     if (!identity) return { ok: false, error: 'identity not found' }
     if (!identity.healthCheck) return { ok: true } // no check defined — vacuously ok (callers should not present this as "verified")
+    if (identity.healthCheck.auth === 'basic' && (!identity.healthCheck.usernameSecretKey || !identity.healthCheck.passwordSecretKey))
+      return { ok: false, error: 'health check: select username and password secret keys' }
+    if (identity.healthCheck.auth === 'bearer' && !identity.healthCheck.passwordSecretKey)
+      return { ok: false, error: 'health check: select a token secret key' }
     const referenced = [
       ...(identity.healthCheck.auth === 'basic' ? [identity.healthCheck.usernameSecretKey] : []),
       ...(identity.healthCheck.auth !== 'none' ? [identity.healthCheck.passwordSecretKey] : [])

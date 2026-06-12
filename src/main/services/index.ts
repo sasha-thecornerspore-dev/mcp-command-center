@@ -94,9 +94,14 @@ export class Services {
       items.push({ clientId: ch.clientId, server, action: ch.action })
       if (ch.action === 'connect') {
         for (const req of server.requiredSecrets ?? []) {
-          if (req.required && !this.secrets.has(req.key) && !seenSecret.has(req.key)) {
+          const present = this.identities.hasSecret(server.id, req.key) ?? this.secrets.has(req.key)
+          if (req.required && !present && !seenSecret.has(req.key)) {
             seenSecret.add(req.key)
-            missing.push(req)
+            missing.push(
+              this.identities.configFor(server.id)
+                ? { ...req, help: `This server uses identities — set this value in its identity editor (Matrix → id chip → Manage identities), not here.` }
+                : req
+            )
           }
         }
       }

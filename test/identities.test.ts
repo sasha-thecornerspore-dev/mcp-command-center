@@ -235,6 +235,24 @@ describe('IdentityService resolve/save/delete', () => {
     expect(r.ok).toBe(false)
     expect(r.error).toContain('OPNSENSE_API_KEY')
   })
+
+  it('hasSecret is identity-aware and undefined without a config', () => {
+    const { svc, secrets } = makeService({ configs: [structuredClone(TWO_IDS)] })
+    secrets.store.set('OPNSENSE_API_KEY', 'plain-value') // plain store must be ignored
+    expect(svc.hasSecret('opnsense', 'OPNSENSE_API_KEY')).toBe(false)
+    secrets.store.set(identitySecretKey('opnsense', 'sasha', 'OPNSENSE_API_KEY'), 'v')
+    expect(svc.hasSecret('opnsense', 'OPNSENSE_API_KEY')).toBe(true)
+    expect(svc.hasSecret('github', 'TOKEN')).toBeUndefined()
+  })
+
+  it('test() fails fast when the health check has no secret keys selected', async () => {
+    const cfg = structuredClone(TWO_IDS)
+    cfg.identities[0].healthCheck = { url: 'https://fw/x', auth: 'bearer' }
+    const { svc } = makeService({ configs: [cfg] })
+    const r = await svc.test('opnsense', 'sasha')
+    expect(r.ok).toBe(false)
+    expect(r.error).toContain('token secret key')
+  })
 })
 
 describe('IdentityService.switch', () => {
