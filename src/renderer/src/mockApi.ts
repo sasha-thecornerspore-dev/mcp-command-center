@@ -82,7 +82,9 @@ const state: AppState = {
       description: 'Everything for coding',
       serverIds: ['git', 'github', 'context7', 'filesystem']
     }
-  ]
+  ],
+  identityConfigs: [],
+  identitySecretsPresent: {}
 }
 
 const plan = (

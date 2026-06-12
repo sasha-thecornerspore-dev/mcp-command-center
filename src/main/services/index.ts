@@ -64,7 +64,9 @@ export class Services {
       catalog: this.catalog.all(),
       suggestions: this.store.getSuggestions(),
       preferences: { ...prefs, anthropicApiKeyConfigured: this.secrets.hasApiKey() },
-      profiles: this.store.getProfiles()
+      profiles: this.store.getProfiles(),
+      identityConfigs: [],
+      identitySecretsPresent: {}
     }
   }
 

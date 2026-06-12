@@ -132,6 +132,45 @@ export interface Profile {
   serverIds: string[]
 }
 
+/** A named credential set for a server (e.g. "sasha", "root"). */
+export interface ServerIdentity {
+  id: string // slug, unique within the server
+  label: string
+  healthCheck?: IdentityHealthCheck
+}
+
+/** Optional pre-switch verification request. */
+export interface IdentityHealthCheck {
+  url: string
+  method?: 'GET' | 'POST' // default GET
+  auth: 'basic' | 'bearer' | 'none'
+  /** Secret keys (of this server) used to build the auth header. */
+  usernameSecretKey?: string // basic: username side
+  passwordSecretKey?: string // basic: password side; bearer: the token
+  skipTlsVerify?: boolean // self-signed certs
+}
+
+/** Per-server identity state, persisted in the store (no secret values here). */
+export interface ServerIdentityConfig {
+  serverId: string
+  identities: ServerIdentity[]
+  activeIdentityId: string
+}
+
+export interface HealthCheckResult {
+  ok: boolean
+  status?: number
+  error?: string
+}
+
+/** Outcome of an identity switch. */
+export interface SwitchResult {
+  healthCheck?: HealthCheckResult
+  blocked?: 'health-check' | 'missing-secrets' | 'not-found'
+  missingKeys?: string[]
+  applyResults: ApplyResult[]
+}
+
 /** A suggestion surfaced by the scanner / advisor / trend watcher. */
 export interface Suggestion {
   id: string
@@ -211,6 +250,9 @@ export interface AppState {
   suggestions: Suggestion[]
   preferences: Preferences
   profiles: Profile[]
+  identityConfigs: ServerIdentityConfig[]
+  /** "<serverId>:<identityId>" -> secret keys that have a stored value (names only). */
+  identitySecretsPresent: Record<string, string[]>
 }
 
 // ---- IPC channel contract (typed names shared by preload + main) ----
@@ -230,6 +272,10 @@ export const IPC = {
   savePreferences: 'prefs:save',
   saveProfile: 'profiles:save',
   applyProfile: 'profiles:apply',
+  saveIdentities: 'identities:save',
+  switchIdentity: 'identities:switch',
+  testIdentity: 'identities:test',
+  deleteIdentities: 'identities:delete',
   dismissSuggestion: 'suggestions:dismiss',
   checkTrends: 'trends:check',
   getReadiness: 'system:readiness',
