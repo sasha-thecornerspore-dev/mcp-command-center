@@ -41,6 +41,7 @@ Regenerate them anytime with `npm run screenshots`.
 | **Scan** | Inspects your system (git, gh, docker, psql…) and proposes sensible default connections. |
 | **Trends** | Pulls newly published servers from the official MCP registry and surfaces “New & Relevant” cards. |
 | **Profiles** | Save reusable bundles (e.g. *Dev stack* = git + github + context7) and apply them across clients in one shot. |
+| **Credential identities** | Give a server multiple named credential sets (e.g. user vs. root API keys) with an optional health check, and switch between them with one click; secrets stay OS-encrypted, never in client configs until apply. |
 
 ### Safety first
 Every config write is **backed up (timestamped), merged (your other settings are preserved),
