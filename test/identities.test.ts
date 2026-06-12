@@ -202,3 +202,72 @@ describe('IdentityService resolve/save/delete', () => {
     })
   })
 })
+
+describe('IdentityService.switch', () => {
+  const withSecrets = (svcBundle: ReturnType<typeof makeService>): void => {
+    for (const id of ['sasha', 'root']) {
+      svcBundle.secrets.store.set(identitySecretKey('opnsense', id, 'OPNSENSE_API_KEY'), 'k-' + id)
+      svcBundle.secrets.store.set(
+        identitySecretKey('opnsense', id, 'OPNSENSE_API_SECRET'),
+        's-' + id
+      )
+    }
+  }
+
+  it('blocks when required secrets are unset', async () => {
+    const b = makeService({ configs: [structuredClone(TWO_IDS)] })
+    const r = await b.svc.switch('opnsense', 'root')
+    expect(r.blocked).toBe('missing-secrets')
+    expect(r.missingKeys).toEqual(['OPNSENSE_API_KEY', 'OPNSENSE_API_SECRET'])
+    expect(b.applied).toHaveLength(0)
+    expect(b.store.configs[0].activeIdentityId).toBe('sasha') // unchanged
+  })
+
+  it('blocks on failed health check without flipping or applying', async () => {
+    const cfg = structuredClone(TWO_IDS)
+    cfg.identities[1].healthCheck = {
+      url: 'https://fw/api/core/firmware/status',
+      auth: 'basic',
+      usernameSecretKey: 'OPNSENSE_API_KEY',
+      passwordSecretKey: 'OPNSENSE_API_SECRET'
+    }
+    const b = makeService({ configs: [cfg], transportStatus: 401 })
+    withSecrets(b)
+    const r = await b.svc.switch('opnsense', 'root')
+    expect(r.blocked).toBe('health-check')
+    expect(r.healthCheck).toEqual({ ok: false, status: 401 })
+    expect(b.applied).toHaveLength(0)
+    expect(b.store.configs[0].activeIdentityId).toBe('sasha')
+  })
+
+  it('flips the pointer and re-applies to exactly the clients that have the server', async () => {
+    const b = makeService({
+      configs: [structuredClone(TWO_IDS)],
+      clients: [
+        { id: 'claude-code', serverIds: ['opnsense', 'git'] },
+        { id: 'claude-desktop', serverIds: ['opnsense'] },
+        { id: 'cursor', serverIds: ['git'] }
+      ],
+      applyResults: [
+        { clientId: 'claude-code', serverId: 'opnsense', action: 'connect', ok: true },
+        { clientId: 'claude-desktop', serverId: 'opnsense', action: 'connect', ok: true }
+      ]
+    })
+    withSecrets(b)
+    const r = await b.svc.switch('opnsense', 'root')
+    expect(r.blocked).toBeUndefined()
+    expect(b.store.configs[0].activeIdentityId).toBe('root')
+    expect(b.applied).toHaveLength(1)
+    expect(b.applied[0].items.map((i) => i.clientId).sort()).toEqual([
+      'claude-code',
+      'claude-desktop'
+    ])
+    expect(r.applyResults).toHaveLength(2)
+  })
+
+  it('returns not-found for unknown server or identity', async () => {
+    const b = makeService({ configs: [structuredClone(TWO_IDS)] })
+    expect((await b.svc.switch('nope', 'root')).blocked).toBe('not-found')
+    expect((await b.svc.switch('opnsense', 'nope')).blocked).toBe('not-found')
+  })
+})
