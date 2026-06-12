@@ -170,6 +170,7 @@ describe('ConnectionEngine', () => {
       missingSecrets: []
     }
     const results = eng.apply(plan)
+    expect(results).toHaveLength(2)
     expect(results.every((r) => r.ok)).toBe(true)
     for (const p of [cdPath, ccPath]) {
       const written = JSON.parse(readFileSync(p, 'utf8'))
