@@ -209,6 +209,21 @@ describe('IdentityService resolve/save/delete', () => {
     expect(secrets.store.get('identity:srv:a:KEY')).toBe('keep')
   })
 
+  it('rejects secretValues keyed by malformed identity ids', () => {
+    const { svc, secrets } = makeService({ configs: [structuredClone(TWO_IDS)] })
+    expect(() =>
+      svc.save(structuredClone(TWO_IDS), { 'root:x': { OPNSENSE_API_KEY: 'v' } })
+    ).toThrow(/identity id/)
+    expect(secrets.store.size).toBe(0)
+  })
+
+  it('rejects a dangling activeIdentityId', () => {
+    const { svc } = makeService({ configs: [] })
+    expect(() =>
+      svc.save({ serverId: 'opnsense', activeIdentityId: 'ghost', identities: [{ id: 'sasha', label: 'sasha' }] })
+    ).toThrow(/active identity/)
+  })
+
   it('test() reports unset health-check secrets by name instead of probing', async () => {
     const cfg = structuredClone(TWO_IDS)
     cfg.identities[0].healthCheck = {

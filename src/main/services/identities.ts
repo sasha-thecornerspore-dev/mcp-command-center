@@ -142,7 +142,10 @@ export class IdentityService {
     assertSafeId(cfg.serverId, 'server id')
     for (const identity of cfg.identities) assertSafeId(identity.id, 'identity id')
     if (cfg.identities.length === 0) return this.delete(cfg.serverId)
+    if (!cfg.identities.some((i) => i.id === cfg.activeIdentityId))
+      throw new Error(`active identity "${cfg.activeIdentityId}" is not in the identity list`)
     for (const [identityId, values] of Object.entries(secretValues ?? {})) {
+      assertSafeId(identityId, 'identity id')
       for (const [key, value] of Object.entries(values)) {
         if (value) this.secrets.set(identitySecretKey(cfg.serverId, identityId, key), value)
       }
