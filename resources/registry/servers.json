@@ -336,6 +336,42 @@
       "tags": ["test", "official"],
       "source": "bundled",
       "homepage": "https://github.com/modelcontextprotocol/servers"
+    },
+    {
+      "id": "opnsense",
+      "name": "OPNsense",
+      "description": "Manage an OPNsense firewall: rules, interfaces, DHCP, VPN, diagnostics via its REST API.",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@richard-stovall/opnsense-mcp-server"],
+      "runtime": "node",
+      "env": { "OPNSENSE_VERIFY_SSL": "false" },
+      "requiredSecrets": [
+        {
+          "key": "OPNSENSE_URL",
+          "label": "Firewall URL",
+          "target": "env",
+          "required": true,
+          "help": "e.g. https://firewall.example.lan"
+        },
+        {
+          "key": "OPNSENSE_API_KEY",
+          "label": "API key",
+          "target": "env",
+          "required": true,
+          "help": "OPNsense: System > Access > Users > (user) > API keys"
+        },
+        {
+          "key": "OPNSENSE_API_SECRET",
+          "label": "API secret",
+          "target": "env",
+          "required": true,
+          "help": "Second line of the downloaded apikey file"
+        }
+      ],
+      "tags": ["network", "firewall", "infra"],
+      "source": "bundled",
+      "homepage": "https://github.com/richard-stovall/opnsense-mcp-server"
     }
   ]
 }
