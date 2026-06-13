@@ -62,7 +62,17 @@ export class SecretStore {
   }
 
   has(key: string): boolean {
-    return Boolean(this.cache[key])
+    return Object.prototype.hasOwnProperty.call(this.cache, key)
+  }
+
+  delete(key: string): void {
+    if (!Object.prototype.hasOwnProperty.call(this.cache, key)) return
+    delete this.cache[key]
+    this.persist()
+  }
+
+  keysWithPrefix(prefix: string): string[] {
+    return Object.keys(this.cache).filter((k) => k.startsWith(prefix))
   }
 
   /** Resolve a set of keys into a plain map (for injection at apply time). */

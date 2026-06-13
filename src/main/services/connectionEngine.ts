@@ -10,7 +10,7 @@ import type {
 } from '../../shared/types'
 import { getAdapter, parseConfig, serializeConfig, specToEntry } from './clientAdapters'
 
-export type SecretResolver = (keys: string[]) => Record<string, string>
+export type SecretResolver = (serverId: string, keys: string[]) => Record<string, string>
 
 interface BackupRecord {
   id: string
@@ -55,6 +55,7 @@ export class ConnectionEngine {
     for (const item of items) {
       if (item.action === 'connect') {
         const secrets = this.resolveSecrets(
+          item.server.id,
           (item.server.requiredSecrets ?? []).map((s) => s.key)
         )
         const entry: ServerEntry = specToEntry(item.server, secrets)

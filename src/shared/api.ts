@@ -13,7 +13,10 @@ import type {
   DetectedClient,
   ServerSpec,
   SystemReadiness,
-  InstallResult
+  InstallResult,
+  ServerIdentityConfig,
+  SwitchResult,
+  HealthCheckResult
 } from './types'
 
 export interface McpApi {
@@ -34,6 +37,13 @@ export interface McpApi {
   savePreferences(prefs: Partial<Preferences>): Promise<Preferences>
   saveProfile(profile: Profile): Promise<Profile[]>
   applyProfile(profileId: string, clientIds: string[]): Promise<ApplyResult[]>
+  saveIdentities(
+    cfg: ServerIdentityConfig,
+    secretValues?: Record<string, Record<string, string>>
+  ): Promise<ServerIdentityConfig[]>
+  switchIdentity(serverId: string, identityId: string): Promise<SwitchResult>
+  testIdentity(serverId: string, identityId: string): Promise<HealthCheckResult>
+  deleteIdentities(serverId: string): Promise<ServerIdentityConfig[]>
   dismissSuggestion(id: string): Promise<Suggestion[]>
   checkTrends(): Promise<Suggestion[]>
   getReadiness(): Promise<SystemReadiness>

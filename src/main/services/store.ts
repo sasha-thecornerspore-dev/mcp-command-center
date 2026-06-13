@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
-import type { Preferences, Profile, Suggestion, CatalogSource } from '../../shared/types'
+import type { Preferences, Profile, Suggestion, CatalogSource, ServerIdentityConfig } from '../../shared/types'
 
 const DEFAULT_PREFS: Preferences = {
   anthropicApiKeyConfigured: false,
@@ -22,6 +22,7 @@ interface Persisted {
   profiles: Profile[]
   dismissedSuggestions: string[]
   suggestions: Suggestion[]
+  identityConfigs: ServerIdentityConfig[]
 }
 
 /** Simple JSON-file persistence for preferences, profiles, and surfaced suggestions. */
@@ -39,7 +40,8 @@ export class Store {
       preferences: { ...DEFAULT_PREFS },
       profiles: [],
       dismissedSuggestions: [],
-      suggestions: []
+      suggestions: [],
+      identityConfigs: []
     }
     if (!existsSync(this.file)) return base
     try {
@@ -48,7 +50,8 @@ export class Store {
         preferences: { ...DEFAULT_PREFS, ...(parsed.preferences ?? {}) },
         profiles: parsed.profiles ?? [],
         dismissedSuggestions: parsed.dismissedSuggestions ?? [],
-        suggestions: parsed.suggestions ?? []
+        suggestions: parsed.suggestions ?? [],
+        identityConfigs: parsed.identityConfigs ?? []
       }
     } catch {
       return base
@@ -89,6 +92,24 @@ export class Store {
     this.data.profiles = this.data.profiles.filter((p) => p.id !== id)
     this.persist()
     return this.data.profiles
+  }
+
+  getIdentityConfigs(): ServerIdentityConfig[] {
+    return this.data.identityConfigs
+  }
+
+  saveIdentityConfig(cfg: ServerIdentityConfig): ServerIdentityConfig[] {
+    const idx = this.data.identityConfigs.findIndex((c) => c.serverId === cfg.serverId)
+    if (idx >= 0) this.data.identityConfigs[idx] = cfg
+    else this.data.identityConfigs.push(cfg)
+    this.persist()
+    return this.data.identityConfigs
+  }
+
+  deleteIdentityConfig(serverId: string): ServerIdentityConfig[] {
+    this.data.identityConfigs = this.data.identityConfigs.filter((c) => c.serverId !== serverId)
+    this.persist()
+    return this.data.identityConfigs
   }
 
   getSuggestions(): Suggestion[] {

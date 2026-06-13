@@ -82,7 +82,9 @@ const state: AppState = {
       description: 'Everything for coding',
       serverIds: ['git', 'github', 'context7', 'filesystem']
     }
-  ]
+  ],
+  identityConfigs: [],
+  identitySecretsPresent: {}
 }
 
 const plan = (
@@ -132,6 +134,10 @@ export function createMockApi(): McpApi {
     savePreferences: () => ok(state.preferences),
     saveProfile: () => ok(state.profiles),
     applyProfile: () => ok([]),
+    saveIdentities: async (cfg) => [cfg],
+    switchIdentity: async () => ({ applyResults: [] }),
+    testIdentity: async () => ({ ok: true, status: 200 }),
+    deleteIdentities: async () => [],
     dismissSuggestion: () => ok(suggestions),
     checkTrends: () => ok(suggestions),
     getReadiness: () =>

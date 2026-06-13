@@ -16,6 +16,7 @@ import { defaultBackupDir } from './paths'
 import { scanSystem } from './systemScanner'
 import { AiAdvisor } from './aiAdvisor'
 import { TrendWatcher } from './trendWatcher'
+import { IdentityService } from './identities'
 
 export interface AppPaths {
   userData: string
@@ -29,6 +30,7 @@ export class Services {
   readonly secrets: SecretStore
   readonly store: Store
   readonly engine: ConnectionEngine
+  readonly identities: IdentityService
   readonly advisor: AiAdvisor
   readonly trends: TrendWatcher
   private clientsCache: DetectedClient[] = []
@@ -40,7 +42,15 @@ export class Services {
     this.engine = new ConnectionEngine(
       defaultBackupDir(paths.userData),
       () => this.clientsCache,
-      (keys) => this.secrets.resolve(keys)
+      (serverId, keys) =>
+        this.identities.resolveForServer(serverId, keys) ?? this.secrets.resolve(keys)
+    )
+    this.identities = new IdentityService(
+      this.store,
+      this.secrets,
+      this.catalog,
+      () => this.clientsCache,
+      this.engine
     )
     this.advisor = new AiAdvisor(this.secrets, this.catalog)
     this.trends = new TrendWatcher(this.catalog, this.store)
@@ -64,7 +74,9 @@ export class Services {
       catalog: this.catalog.all(),
       suggestions: this.store.getSuggestions(),
       preferences: { ...prefs, anthropicApiKeyConfigured: this.secrets.hasApiKey() },
-      profiles: this.store.getProfiles()
+      profiles: this.store.getProfiles(),
+      identityConfigs: this.store.getIdentityConfigs(),
+      identitySecretsPresent: this.identities.secretsPresent()
     }
   }
 
@@ -82,9 +94,14 @@ export class Services {
       items.push({ clientId: ch.clientId, server, action: ch.action })
       if (ch.action === 'connect') {
         for (const req of server.requiredSecrets ?? []) {
-          if (req.required && !this.secrets.has(req.key) && !seenSecret.has(req.key)) {
+          const present = this.identities.hasSecret(server.id, req.key) ?? this.secrets.has(req.key)
+          if (req.required && !present && !seenSecret.has(req.key)) {
             seenSecret.add(req.key)
-            missing.push(req)
+            missing.push(
+              this.identities.configFor(server.id)
+                ? { ...req, help: `This server uses identities — set this value in its identity editor (Matrix → id chip → Manage identities), not here.` }
+                : req
+            )
           }
         }
       }
