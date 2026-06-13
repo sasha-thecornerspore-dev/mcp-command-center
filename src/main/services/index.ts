@@ -99,7 +99,7 @@ export class Services {
             seenSecret.add(req.key)
             missing.push(
               this.identities.configFor(server.id)
-                ? { ...req, help: `This server uses identities — set this value in its identity editor (Matrix → id chip → Manage identities), not here.` }
+                ? { ...req, help: `Managed by this server's credential identities — set it on the active identity (Matrix → identity chip → Manage identities). Values entered in this dialog are ignored for identity-managed servers.` }
                 : req
             )
           }

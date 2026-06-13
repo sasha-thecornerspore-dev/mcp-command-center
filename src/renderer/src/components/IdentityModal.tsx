@@ -127,9 +127,12 @@ export function IdentityModal({
                 {secretKeys.map((key) => (
                   <label key={key} className="text-xs text-muted">
                     {key}
+                    {present.includes(key) && <span className="text-good"> · saved</span>}
                     <input
                       type="password"
-                      placeholder={present.includes(key) ? '••••• (set — blank keeps)' : 'not set'}
+                      placeholder={
+                        present.includes(key) ? 'leave blank to keep saved value' : 'enter value'
+                      }
                       value={values[identity.id]?.[key] ?? ''}
                       onChange={(e) => setValue(identity.id, key, e.target.value)}
                       className="mt-0.5 w-full bg-ink border border-edge rounded-md px-2 py-1 text-sm text-gray-200"
