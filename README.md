@@ -112,17 +112,17 @@ flowchart LR
         A --- P[Profiles]
         P --- S[Settings]
     end
-    Renderer -- IPC bridge --> Main
     subgraph Main["Main process (Node services)"]
         CD[Client Detector] --> CE[Connection Engine]
         CAT[Server Catalog] --> CE
-        SEC[Secrets / safeStorage] --> CE
+        SEC["Secrets / safeStorage"] --> CE
         SCAN[System Scanner]
-        ADV[AI Advisor → Anthropic]
-        TW[Trend Watcher → MCP registry]
-        ST[Preferences / Profiles]
+        ADV["AI Advisor (Anthropic)"]
+        TW["Trend Watcher (MCP registry)"]
+        ST["Preferences / Profiles"]
     end
-    CE -- backup → merge → validate → atomic write --> Files[(Client config files)]
+    Renderer -- "IPC bridge" --> Main
+    CE -- "backup, merge, validate, atomic write" --> Files[("Client config files")]
 ```
 
 - **Client Detector** — locates each client's config and parses current servers.
