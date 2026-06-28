@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useAppState } from '../state'
 import { api } from '../api'
 import { Card, Badge, Button, Spinner } from '../components/ui'
 import { PlanReviewModal } from '../components/PlanReviewModal'
-import type { ConnectionPlan, PendingKey, Suggestion } from '@shared/types'
+import type { ConnectionPlan, PendingKey, Suggestion, UpdateStatus } from '@shared/types'
 
 export function Dashboard({ onNavigate }: { onNavigate: (t: any) => void }): React.JSX.Element {
   const { state, reload } = useAppState()
@@ -12,6 +12,15 @@ export function Dashboard({ onNavigate }: { onNavigate: (t: any) => void }): Rea
   const [checking, setChecking] = useState(false)
   const [resolvingKey, setResolvingKey] = useState<PendingKey | null>(null)
   const [resolveValue, setResolveValue] = useState('')
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>(
+    state?.updateStatus ?? { phase: 'idle' }
+  )
+  const [installing, setInstalling] = useState(false)
+
+  useEffect(() => {
+    if (state?.updateStatus) setUpdateStatus(state.updateStatus)
+    return api.onUpdateStatus(setUpdateStatus)
+  }, [])
 
   if (!state) return <Spinner />
 
@@ -115,6 +124,43 @@ export function Dashboard({ onNavigate }: { onNavigate: (t: any) => void }): Rea
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Update banner */}
+      {(updateStatus.phase === 'available' || updateStatus.phase === 'downloading' || updateStatus.phase === 'ready') && (
+        <div className="flex items-center gap-3 bg-claw/10 border border-claw/30 rounded-lg px-4 py-3">
+          <span className="text-claw shrink-0">↑</span>
+          <div className="flex-1 min-w-0 text-sm">
+            {updateStatus.phase === 'available' && (
+              <span className="text-gray-200">
+                Update <span className="font-medium">{updateStatus.version}</span> available — downloading…
+              </span>
+            )}
+            {updateStatus.phase === 'downloading' && (
+              <span className="text-gray-200">
+                Downloading update {updateStatus.version ?? ''}…{' '}
+                <span className="text-claw font-medium">{updateStatus.percent ?? 0}%</span>
+              </span>
+            )}
+            {updateStatus.phase === 'ready' && (
+              <span className="text-gray-200">
+                Update <span className="font-medium">{updateStatus.version}</span> ready — restart to install.
+              </span>
+            )}
+          </div>
+          {updateStatus.phase === 'ready' && (
+            <Button
+              variant="primary"
+              disabled={installing}
+              onClick={async () => {
+                setInstalling(true)
+                await api.installUpdate()
+              }}
+            >
+              {installing ? 'Restarting…' : 'Restart & install'}
+            </Button>
+          )}
         </div>
       )}
 

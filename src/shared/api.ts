@@ -18,7 +18,8 @@ import type {
   SwitchResult,
   HealthCheckResult,
   SecretCandidate,
-  PendingKey
+  PendingKey,
+  UpdateStatus
 } from './types'
 
 export interface McpApi {
@@ -60,4 +61,9 @@ export interface McpApi {
   /** Set the real value for a pending key and re-apply the server config. */
   resolvePendingKey(id: string, value: string): Promise<PendingKey[]>
   dismissPendingKey(id: string): Promise<PendingKey[]>
+  getUpdateStatus(): Promise<UpdateStatus>
+  checkForUpdates(): Promise<void>
+  installUpdate(): Promise<void>
+  /** Subscribe to updater phase-change push events. Returns an unsubscribe fn. */
+  onUpdateStatus(cb: (s: UpdateStatus) => void): () => void
 }

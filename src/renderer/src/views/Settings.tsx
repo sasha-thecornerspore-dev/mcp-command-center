@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useAppState } from '../state'
 import { api } from '../api'
 import { Card, Button, Badge, Spinner } from '../components/ui'
-import type { CatalogSource, KeyDiscoverySources } from '@shared/types'
+import type { CatalogSource, KeyDiscoverySources, UpdateCheckFrequency } from '@shared/types'
 
 const SOURCE_LABELS: Record<CatalogSource, string> = {
   bundled: 'Bundled curated registry',
@@ -48,6 +48,11 @@ export function Settings(): React.JSX.Element {
 
   async function setRefresh(hours: number): Promise<void> {
     await api.savePreferences({ catalogRefreshHours: hours })
+    await reload()
+  }
+
+  async function setUpdateFrequency(freq: UpdateCheckFrequency): Promise<void> {
+    await api.savePreferences({ updateCheckFrequency: freq })
     await reload()
   }
 
@@ -145,6 +150,27 @@ export function Settings(): React.JSX.Element {
             <option value={24}>24 hours</option>
             <option value={72}>3 days</option>
             <option value={168}>weekly</option>
+          </select>
+        </div>
+      </Card>
+
+      <Card>
+        <h2 className="font-medium text-gray-100 mb-1">App auto-update</h2>
+        <p className="text-sm text-muted mb-3">
+          How often to check GitHub Releases for a newer build. The download happens in the
+          background; you control when to install.
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-300">Check</span>
+          <select
+            value={prefs.updateCheckFrequency ?? 'launch'}
+            onChange={(e) => setUpdateFrequency(e.target.value as UpdateCheckFrequency)}
+            className="bg-ink border border-edge rounded-md px-3 py-1.5 text-sm"
+          >
+            <option value="never">Never</option>
+            <option value="launch">On launch</option>
+            <option value="daily">Every day</option>
+            <option value="weekly">Every week</option>
           </select>
         </div>
       </Card>

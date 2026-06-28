@@ -84,7 +84,8 @@ export class Services {
       profiles: this.store.getProfiles(),
       identityConfigs: this.store.getIdentityConfigs(),
       identitySecretsPresent: this.identities.secretsPresent(),
-      pendingKeys: this.store.getPendingKeys()
+      pendingKeys: this.store.getPendingKeys(),
+      updateStatus: { phase: 'idle' as const }
     }
   }
 

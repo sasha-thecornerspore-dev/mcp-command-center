@@ -22,7 +22,8 @@ const DEFAULT_PREFS: Preferences = {
   dismissedSuggestionIds: [],
   favoriteServerIds: [],
   baseBuild: 'standard',
-  keyDiscoverySources: { appEnv: true, otherClients: true, envFiles: false }
+  keyDiscoverySources: { appEnv: true, otherClients: true, envFiles: false },
+  updateCheckFrequency: 'launch'
 }
 
 interface Persisted {

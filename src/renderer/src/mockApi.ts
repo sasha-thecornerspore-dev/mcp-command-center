@@ -7,7 +7,8 @@ import type {
   ConnectionPlan,
   DetectedClient,
   ServerSpec,
-  Suggestion
+  Suggestion,
+  UpdateStatus
 } from '@shared/types'
 import registry from '../../../resources/registry/servers.json'
 
@@ -74,7 +75,8 @@ const state: AppState = {
     dismissedSuggestionIds: [],
     favoriteServerIds: [],
     baseBuild: 'standard',
-    keyDiscoverySources: { appEnv: true, otherClients: true, envFiles: false }
+    keyDiscoverySources: { appEnv: true, otherClients: true, envFiles: false },
+    updateCheckFrequency: 'launch'
   },
   profiles: [
     {
@@ -86,7 +88,8 @@ const state: AppState = {
   ],
   identityConfigs: [],
   identitySecretsPresent: {},
-  pendingKeys: []
+  pendingKeys: [],
+  updateStatus: { phase: 'idle' }
 }
 
 const plan = (
@@ -211,6 +214,10 @@ export function createMockApi(): McpApi {
       ),
     getPendingKeys: () => ok([]),
     resolvePendingKey: () => ok([]),
-    dismissPendingKey: () => ok([])
+    dismissPendingKey: () => ok([]),
+    getUpdateStatus: (): Promise<UpdateStatus> => ok({ phase: 'idle' }),
+    checkForUpdates: () => ok(undefined),
+    installUpdate: () => ok(undefined),
+    onUpdateStatus: () => () => { /* no-op */ }
   }
 }

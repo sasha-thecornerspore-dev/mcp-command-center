@@ -15,7 +15,8 @@ import type {
   SwitchResult,
   HealthCheckResult,
   SecretCandidate,
-  PendingKey
+  PendingKey,
+  UpdateStatus
 } from '../shared/types'
 import type { McpApi } from '../shared/api'
 
@@ -71,7 +72,15 @@ const api: McpApi = {
   resolvePendingKey: (id: string, value: string): Promise<PendingKey[]> =>
     ipcRenderer.invoke(IPC.resolvePendingKey, id, value),
   dismissPendingKey: (id: string): Promise<PendingKey[]> =>
-    ipcRenderer.invoke(IPC.dismissPendingKey, id)
+    ipcRenderer.invoke(IPC.dismissPendingKey, id),
+  getUpdateStatus: (): Promise<UpdateStatus> => ipcRenderer.invoke(IPC.getUpdateStatus),
+  checkForUpdates: (): Promise<void> => ipcRenderer.invoke(IPC.checkForUpdates),
+  installUpdate: (): Promise<void> => ipcRenderer.invoke(IPC.installUpdate),
+  onUpdateStatus: (cb: (s: UpdateStatus) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, s: UpdateStatus): void => cb(s)
+    ipcRenderer.on(IPC.updateStatusPush, handler)
+    return () => ipcRenderer.removeListener(IPC.updateStatusPush, handler)
+  }
 }
 
 export type MccApi = typeof api

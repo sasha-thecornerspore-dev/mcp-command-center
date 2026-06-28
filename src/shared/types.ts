@@ -200,6 +200,16 @@ export interface KeyDiscoverySources {
   envFiles: boolean
 }
 
+export type UpdateCheckFrequency = 'never' | 'launch' | 'daily' | 'weekly'
+
+export interface UpdateStatus {
+  phase: 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'error'
+  version?: string
+  /** Download progress 0–100. */
+  percent?: number
+  error?: string
+}
+
 export interface Preferences {
   anthropicApiKeyConfigured: boolean
   catalogRefreshHours: number
@@ -211,6 +221,8 @@ export interface Preferences {
   baseBuild: BaseBuild
   /** Where "Detect from environment" is allowed to look (user-configurable). */
   keyDiscoverySources: KeyDiscoverySources
+  /** How often to poll GitHub releases for a newer build. */
+  updateCheckFrequency: UpdateCheckFrequency
 }
 
 /** A possible value for a required secret, found by the discovery service. */
@@ -298,6 +310,8 @@ export interface AppState {
   identitySecretsPresent: Record<string, string[]>
   /** Required keys the user deferred; surfaced as launch reminders. */
   pendingKeys: PendingKey[]
+  /** Current auto-updater phase (included so initial render gets the last-known status). */
+  updateStatus: UpdateStatus
 }
 
 /** Placeholder written into a client config for a deferred required key. */
@@ -333,7 +347,12 @@ export const IPC = {
   deferKeys: 'plan:defer',
   getPendingKeys: 'pending:get',
   resolvePendingKey: 'pending:resolve',
-  dismissPendingKey: 'pending:dismiss'
+  dismissPendingKey: 'pending:dismiss',
+  checkForUpdates: 'updater:check',
+  installUpdate: 'updater:install',
+  getUpdateStatus: 'updater:getStatus',
+  /** Push channel: main sends UpdateStatus to renderer when phase changes. */
+  updateStatusPush: 'updater:status'
 } as const
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC]
