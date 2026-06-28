@@ -95,4 +95,27 @@ export function registerIpc(services: Services): void {
   ipcMain.handle(IPC.installRuntime, (_e, runtimeId: string, command: string) =>
     runInstall(runtimeId, command)
   )
+
+  ipcMain.handle(IPC.discoverSecrets, (_e, keys: string[]) => {
+    services.refreshClients() // scan current client configs for matching keys
+    return services.discoverSecrets(keys)
+  })
+
+  ipcMain.handle(IPC.useSecretCandidate, (_e, key: string, candidateId: string) =>
+    services.useSecretCandidate(key, candidateId)
+  )
+
+  ipcMain.handle(
+    IPC.deferKeys,
+    (_e, plan: ConnectionPlan, keys: string[], remind: boolean) =>
+      services.deferKeys(plan, keys, remind)
+  )
+
+  ipcMain.handle(IPC.getPendingKeys, () => services.store.getPendingKeys())
+
+  ipcMain.handle(IPC.resolvePendingKey, (_e, id: string, value: string) =>
+    services.resolvePendingKey(id, value)
+  )
+
+  ipcMain.handle(IPC.dismissPendingKey, (_e, id: string) => services.dismissPendingKey(id))
 }

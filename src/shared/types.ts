@@ -190,6 +190,16 @@ export interface Suggestion {
   createdAt: string
 }
 
+/** Which places the app may look in when auto-detecting a server's API key. */
+export interface KeyDiscoverySources {
+  /** The app's own process environment variables. */
+  appEnv: boolean
+  /** Values already present for the same key in other detected clients' configs. */
+  otherClients: boolean
+  /** Common .env files (home dir, current dir). More sensitive — off by default. */
+  envFiles: boolean
+}
+
 export interface Preferences {
   anthropicApiKeyConfigured: boolean
   catalogRefreshHours: number
@@ -199,6 +209,32 @@ export interface Preferences {
   favoriteServerIds: string[]
   /** Chosen prerequisite footprint; drives which runtimes the app ensures. */
   baseBuild: BaseBuild
+  /** Where "Detect from environment" is allowed to look (user-configurable). */
+  keyDiscoverySources: KeyDiscoverySources
+}
+
+/** A possible value for a required secret, found by the discovery service. */
+export interface SecretCandidate {
+  /** Opaque id used to apply this candidate without sending the raw value to the UI. */
+  candidateId: string
+  /** Human label of where it came from, e.g. "app environment" or "Cursor config". */
+  source: string
+  /** Masked preview, e.g. "ghp_…a1b2". */
+  preview: string
+}
+
+/** A required key the user chose to skip; surfaced as a reminder until resolved. */
+export interface PendingKey {
+  id: string
+  serverId: string
+  serverName: string
+  key: string
+  label: string
+  /** Clients whose config got a placeholder for this key. */
+  clientIds: string[]
+  /** Whether to surface this on the dashboard at next launch. */
+  remind: boolean
+  createdAt: string
 }
 
 /** Result of a system scan: detected tools that have known MCP servers. */
@@ -260,7 +296,12 @@ export interface AppState {
   identityConfigs: ServerIdentityConfig[]
   /** "<serverId>:<identityId>" -> secret keys that have a stored value (names only). */
   identitySecretsPresent: Record<string, string[]>
+  /** Required keys the user deferred; surfaced as launch reminders. */
+  pendingKeys: PendingKey[]
 }
+
+/** Placeholder written into a client config for a deferred required key. */
+export const KEY_PLACEHOLDER = (key: string): string => `<SET:${key}>`
 
 // ---- IPC channel contract (typed names shared by preload + main) ----
 export const IPC = {
@@ -286,7 +327,13 @@ export const IPC = {
   dismissSuggestion: 'suggestions:dismiss',
   checkTrends: 'trends:check',
   getReadiness: 'system:readiness',
-  installRuntime: 'system:install'
+  installRuntime: 'system:install',
+  discoverSecrets: 'secrets:discover',
+  useSecretCandidate: 'secrets:useCandidate',
+  deferKeys: 'plan:defer',
+  getPendingKeys: 'pending:get',
+  resolvePendingKey: 'pending:resolve',
+  dismissPendingKey: 'pending:dismiss'
 } as const
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC]

@@ -16,7 +16,9 @@ import type {
   InstallResult,
   ServerIdentityConfig,
   SwitchResult,
-  HealthCheckResult
+  HealthCheckResult,
+  SecretCandidate,
+  PendingKey
 } from './types'
 
 export interface McpApi {
@@ -48,4 +50,14 @@ export interface McpApi {
   checkTrends(): Promise<Suggestion[]>
   getReadiness(): Promise<SystemReadiness>
   installRuntime(runtimeId: string, command: string): Promise<InstallResult>
+  /** Scan permitted sources for candidate values for the given secret keys. */
+  discoverSecrets(keys: string[]): Promise<Record<string, SecretCandidate[]>>
+  /** Promote a discovered candidate to a saved secret (raw value never leaves main). */
+  useSecretCandidate(key: string, candidateId: string): Promise<boolean>
+  /** Apply a plan with placeholder values for deferred keys and record reminders. */
+  deferKeys(plan: ConnectionPlan, keys: string[], remind: boolean): Promise<ApplyResult[]>
+  getPendingKeys(): Promise<PendingKey[]>
+  /** Set the real value for a pending key and re-apply the server config. */
+  resolvePendingKey(id: string, value: string): Promise<PendingKey[]>
+  dismissPendingKey(id: string): Promise<PendingKey[]>
 }

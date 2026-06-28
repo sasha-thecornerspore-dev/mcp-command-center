@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useAppState } from '../state'
 import { api } from '../api'
 import { Card, Button, Badge, Spinner } from '../components/ui'
-import type { CatalogSource } from '@shared/types'
+import type { CatalogSource, KeyDiscoverySources } from '@shared/types'
 
 const SOURCE_LABELS: Record<CatalogSource, string> = {
   bundled: 'Bundled curated registry',
@@ -36,6 +36,13 @@ export function Settings(): React.JSX.Element {
 
   async function toggleSource(src: CatalogSource, on: boolean): Promise<void> {
     await api.savePreferences({ sources: { ...prefs.sources, [src]: on } })
+    await reload()
+  }
+
+  async function toggleDiscovery(field: keyof KeyDiscoverySources, on: boolean): Promise<void> {
+    await api.savePreferences({
+      keyDiscoverySources: { ...prefs.keyDiscoverySources, [field]: on }
+    })
     await reload()
   }
 
@@ -89,6 +96,36 @@ export function Settings(): React.JSX.Element {
                 checked={prefs.sources[src] ?? false}
                 onChange={(e) => toggleSource(src, e.target.checked)}
               />
+            </label>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <h2 className="font-medium text-gray-100 mb-1">Key auto-detection sources</h2>
+        <p className="text-sm text-muted mb-3">
+          When connecting a server that needs an API key, the app can look in these places before
+          asking you to type it in.
+        </p>
+        <div className="space-y-2">
+          {(
+            [
+              ['appEnv', 'App environment variables', 'PATH, env vars visible to this process.'],
+              ['otherClients', 'Other AI clients\' configs', 'Reuse a key already set in Claude Desktop, Cursor, etc.'],
+              ['envFiles', '.env files (home / project dirs)', 'More sensitive — disabled by default.']
+            ] as [keyof KeyDiscoverySources, string, string][]
+          ).map(([field, label, hint]) => (
+            <label key={field} className="flex items-start gap-3 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-0.5 accent-claw"
+                checked={prefs.keyDiscoverySources?.[field] ?? false}
+                onChange={(e) => toggleDiscovery(field, e.target.checked)}
+              />
+              <span>
+                <span className="text-gray-300">{label}</span>
+                <span className="block text-xs text-muted">{hint}</span>
+              </span>
             </label>
           ))}
         </div>

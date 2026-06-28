@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import type { ConnectionPlan, PlanDiff, ApplyResult, SecretRequirement } from '@shared/types'
+import type {
+  ConnectionPlan,
+  PlanDiff,
+  ApplyResult,
+  SecretCandidate,
+  SecretRequirement
+} from '@shared/types'
 import { api } from '../api'
 import { Button, Modal, Badge, Spinner } from './ui'
 
@@ -19,6 +25,10 @@ export function PlanReviewModal({
     initialPlan.missingSecrets.length ? 'secrets' : 'preview'
   )
   const [secretValues, setSecretValues] = useState<Record<string, string>>({})
+  const [candidates, setCandidates] = useState<Record<string, SecretCandidate[]>>({})
+  const [deferredKeys, setDeferredKeys] = useState<Set<string>>(new Set())
+  const [remind, setRemind] = useState(true)
+  const [discovering, setDiscovering] = useState(false)
   const [diffs, setDiffs] = useState<PlanDiff[]>([])
   const [results, setResults] = useState<ApplyResult[]>([])
   const [busy, setBusy] = useState(false)
@@ -28,6 +38,24 @@ export function PlanReviewModal({
     if (phase === 'preview') void loadPreview()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase])
+
+  // Auto-detect on mount when there are missing secrets
+  useEffect(() => {
+    if (initialPlan.missingSecrets.length) void runDiscover(initialPlan.missingSecrets)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function runDiscover(reqs: SecretRequirement[]): Promise<void> {
+    setDiscovering(true)
+    try {
+      const found = await api.discoverSecrets(reqs.map((r) => r.key))
+      setCandidates(found)
+    } catch {
+      /* discovery is best-effort */
+    } finally {
+      setDiscovering(false)
+    }
+  }
 
   async function loadPreview(): Promise<void> {
     setBusy(true)
@@ -40,16 +68,41 @@ export function PlanReviewModal({
     }
   }
 
+  async function useCandidate(key: string, candidateId: string): Promise<void> {
+    await api.useSecretCandidate(key, candidateId)
+    setSecretValues((prev) => ({ ...prev, [key]: '__from_candidate__' }))
+    setDeferredKeys((prev) => { const n = new Set(prev); n.delete(key); return n })
+  }
+
+  function toggleDefer(key: string, defer: boolean): void {
+    setDeferredKeys((prev) => {
+      const n = new Set(prev)
+      if (defer) n.add(key)
+      else n.delete(key)
+      return n
+    })
+  }
+
   async function saveSecretsAndContinue(): Promise<void> {
     setBusy(true)
     setError(null)
     try {
       for (const req of plan.missingSecrets) {
+        if (deferredKeys.has(req.key)) continue
         const v = secretValues[req.key]
-        if (req.required && !v) throw new Error(`${req.label} is required.`)
-        if (v) await api.setSecret(req.key, v)
+        if (v && v !== '__from_candidate__') await api.setSecret(req.key, v)
       }
-      // Rebuild the plan so missingSecrets re-evaluates with the new secrets.
+
+      const explicitDefer = plan.missingSecrets.filter((r) => deferredKeys.has(r.key))
+
+      if (explicitDefer.length > 0) {
+        const deferred = await api.deferKeys(plan, explicitDefer.map((r) => r.key), remind)
+        setResults(deferred)
+        setPhase('done')
+        onApplied()
+        return
+      }
+
       const changes = plan.items.map((i) => ({
         clientId: i.clientId,
         serverId: i.server.id,
@@ -95,8 +148,16 @@ export function PlanReviewModal({
         <SecretsForm
           requirements={plan.missingSecrets}
           values={secretValues}
-          onChange={setSecretValues}
+          candidates={candidates}
+          deferredKeys={deferredKeys}
+          remind={remind}
+          discovering={discovering}
           busy={busy}
+          onChange={setSecretValues}
+          onToggleDefer={toggleDefer}
+          onSetRemind={setRemind}
+          onUseCandidate={useCandidate}
+          onReDiscover={() => runDiscover(plan.missingSecrets)}
           onContinue={saveSecretsAndContinue}
         />
       )}
@@ -166,40 +227,146 @@ function PlanSummary({ plan }: { plan: ConnectionPlan }): React.JSX.Element {
 function SecretsForm({
   requirements,
   values,
-  onChange,
+  candidates,
+  deferredKeys,
+  remind,
+  discovering,
   busy,
+  onChange,
+  onToggleDefer,
+  onSetRemind,
+  onUseCandidate,
+  onReDiscover,
   onContinue
 }: {
   requirements: SecretRequirement[]
   values: Record<string, string>
-  onChange: (v: Record<string, string>) => void
+  candidates: Record<string, SecretCandidate[]>
+  deferredKeys: Set<string>
+  remind: boolean
+  discovering: boolean
   busy: boolean
+  onChange: (v: Record<string, string>) => void
+  onToggleDefer: (key: string, defer: boolean) => void
+  onSetRemind: (v: boolean) => void
+  onUseCandidate: (key: string, candidateId: string) => void
+  onReDiscover: () => void
   onContinue: () => void
 }): React.JSX.Element {
+  const anyDeferred = deferredKeys.size > 0
+
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-muted">
-        These connections need credentials. They're stored encrypted in your OS keychain — never in
-        plaintext configs.
-      </p>
-      {requirements.map((req) => (
-        <label key={req.key} className="block">
-          <span className="text-sm text-gray-300">
-            {req.label} {req.required && <span className="text-bad">*</span>}
-          </span>
+    <div className="space-y-5">
+      <div className="flex items-start justify-between gap-4">
+        <p className="text-sm text-muted">
+          These connections need credentials. Stored encrypted in your OS keychain — never in
+          plaintext configs.
+        </p>
+        <Button variant="ghost" onClick={onReDiscover} disabled={discovering}>
+          {discovering ? 'Detecting…' : '⟳ Re-detect'}
+        </Button>
+      </div>
+
+      {requirements.map((req) => {
+        const deferred = deferredKeys.has(req.key)
+        const usedCandidate = values[req.key] === '__from_candidate__'
+        const filled = usedCandidate || !!values[req.key]
+        const keyCandidates = candidates[req.key] ?? []
+
+        return (
+          <div key={req.key} className="border border-edge rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium text-gray-200">
+                {req.label}
+                {req.required && !deferred && <span className="text-bad ml-1">*</span>}
+              </span>
+              <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={deferred}
+                  onChange={(e) => onToggleDefer(req.key, e.target.checked)}
+                  className="accent-warn"
+                />
+                Skip for now
+              </label>
+            </div>
+
+            {deferred ? (
+              <div className="text-xs text-warn bg-warn/10 border border-warn/30 rounded-md px-3 py-2">
+                A placeholder <code className="font-mono">&lt;SET:{req.key}&gt;</code> will be
+                written into the config. The server will not function until the real value is set.
+              </div>
+            ) : (
+              <>
+                {keyCandidates.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs text-muted">
+                      {discovering ? 'Detecting…' : 'Found on this system:'}
+                    </p>
+                    {keyCandidates.map((c) => (
+                      <div
+                        key={c.candidateId}
+                        className="flex items-center justify-between bg-panel2 rounded-md px-3 py-1.5"
+                      >
+                        <span className="text-xs text-gray-300">
+                          <span className="text-muted">{c.source}</span>
+                          {' · '}
+                          <code className="font-mono">{c.preview}</code>
+                        </span>
+                        {usedCandidate ? (
+                          <Badge tone="good">Using this</Badge>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            onClick={() => onUseCandidate(req.key, c.candidateId)}
+                          >
+                            Use
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {!usedCandidate && (
+                  <input
+                    type="password"
+                    className="w-full bg-ink border border-edge rounded-md px-3 py-2 text-sm font-mono"
+                    value={values[req.key] ?? ''}
+                    onChange={(e) => onChange({ ...values, [req.key]: e.target.value })}
+                    placeholder={keyCandidates.length > 0 ? 'Or enter manually…' : req.key}
+                  />
+                )}
+
+                {usedCandidate && (
+                  <Button variant="ghost" onClick={() => onChange({ ...values, [req.key]: '' })}>
+                    Enter manually instead
+                  </Button>
+                )}
+
+                {req.help && <p className="text-xs text-muted">{req.help}</p>}
+                {filled && !deferred && <Badge tone="good">Ready</Badge>}
+              </>
+            )}
+          </div>
+        )
+      })}
+
+      {anyDeferred && (
+        <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer select-none">
           <input
-            type="password"
-            className="mt-1 w-full bg-ink border border-edge rounded-md px-3 py-2 text-sm font-mono"
-            value={values[req.key] ?? ''}
-            onChange={(e) => onChange({ ...values, [req.key]: e.target.value })}
-            placeholder={req.key}
+            type="checkbox"
+            checked={remind}
+            onChange={(e) => onSetRemind(e.target.checked)}
+            className="accent-claw"
           />
-          {req.help && <span className="text-xs text-muted">{req.help}</span>}
+          Remind me on next launch to fill in the missing key{deferredKeys.size > 1 ? 's' : ''}
         </label>
-      ))}
-      <div className="flex justify-end">
+      )}
+
+      <div className="flex justify-end gap-2">
         <Button variant="primary" onClick={onContinue} disabled={busy}>
-          Continue
+          {anyDeferred ? 'Install with placeholder' : 'Continue'}
         </Button>
       </div>
     </div>

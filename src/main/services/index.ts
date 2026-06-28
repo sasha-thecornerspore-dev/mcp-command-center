@@ -1,12 +1,16 @@
 import { join } from 'path'
 import type {
   AppState,
+  ApplyResult,
   ConnectionPlan,
   DetectedClient,
+  PendingKey,
   PlanItem,
+  SecretCandidate,
   SecretRequirement,
   Suggestion
 } from '../../shared/types'
+import { KEY_PLACEHOLDER } from '../../shared/types'
 import { detectClients } from './clientDetector'
 import { ConnectionEngine } from './connectionEngine'
 import { Catalog } from './catalog'
@@ -17,6 +21,7 @@ import { scanSystem } from './systemScanner'
 import { AiAdvisor } from './aiAdvisor'
 import { TrendWatcher } from './trendWatcher'
 import { IdentityService } from './identities'
+import { SecretDiscovery } from './secretDiscovery'
 
 export interface AppPaths {
   userData: string
@@ -33,6 +38,7 @@ export class Services {
   readonly identities: IdentityService
   readonly advisor: AiAdvisor
   readonly trends: TrendWatcher
+  readonly discovery: SecretDiscovery
   private clientsCache: DetectedClient[] = []
 
   constructor(paths: AppPaths) {
@@ -54,6 +60,7 @@ export class Services {
     )
     this.advisor = new AiAdvisor(this.secrets, this.catalog)
     this.trends = new TrendWatcher(this.catalog, this.store)
+    this.discovery = new SecretDiscovery(() => this.clientsCache)
     this.refreshClients()
   }
 
@@ -76,8 +83,79 @@ export class Services {
       preferences: { ...prefs, anthropicApiKeyConfigured: this.secrets.hasApiKey() },
       profiles: this.store.getProfiles(),
       identityConfigs: this.store.getIdentityConfigs(),
-      identitySecretsPresent: this.identities.secretsPresent()
+      identitySecretsPresent: this.identities.secretsPresent(),
+      pendingKeys: this.store.getPendingKeys()
     }
+  }
+
+  // ---- key discovery + deferral ----
+
+  discoverSecrets(keys: string[]): Record<string, SecretCandidate[]> {
+    const sources = this.store.getPreferences().keyDiscoverySources
+    return this.discovery.discover(keys, sources)
+  }
+
+  useSecretCandidate(key: string, candidateId: string): boolean {
+    const value = this.discovery.resolve(candidateId)
+    if (value == null) return false
+    this.secrets.set(key, value)
+    return true
+  }
+
+  /** Apply a plan while writing placeholders for deferred keys, and record reminders. */
+  deferKeys(plan: ConnectionPlan, keys: string[], remind: boolean): ApplyResult[] {
+    this.refreshClients()
+    const placeholders = Object.fromEntries(keys.map((k) => [k, KEY_PLACEHOLDER(k)]))
+    const results = this.engine.apply(plan, placeholders)
+
+    const deferred = new Set(keys)
+    const pending: PendingKey[] = []
+    const seen = new Set<string>()
+    for (const item of plan.items) {
+      if (item.action !== 'connect') continue
+      for (const req of item.server.requiredSecrets ?? []) {
+        if (!deferred.has(req.key)) continue
+        const id = `${item.server.id}:${req.key}`
+        if (seen.has(id)) {
+          const existing = pending.find((p) => p.id === id)
+          if (existing && !existing.clientIds.includes(item.clientId))
+            existing.clientIds.push(item.clientId)
+          continue
+        }
+        seen.add(id)
+        pending.push({
+          id,
+          serverId: item.server.id,
+          serverName: item.server.name,
+          key: req.key,
+          label: req.label,
+          clientIds: [item.clientId],
+          remind,
+          createdAt: new Date().toISOString()
+        })
+      }
+    }
+    if (pending.length) this.store.addPendingKeys(pending)
+    return results
+  }
+
+  /** Set a deferred key's real value and re-apply its server to replace the placeholder. */
+  resolvePendingKey(id: string, value: string): PendingKey[] {
+    const pk = this.store.getPendingKeys().find((p) => p.id === id)
+    if (!pk) return this.store.getPendingKeys()
+    if (value) this.secrets.set(pk.key, value)
+    this.refreshClients()
+    const changes = pk.clientIds.map((clientId) => ({
+      clientId,
+      serverId: pk.serverId,
+      action: 'connect' as const
+    }))
+    this.engine.apply(this.buildMatrixPlan(changes))
+    return this.store.removePendingKey(id)
+  }
+
+  dismissPendingKey(id: string): PendingKey[] {
+    return this.store.removePendingKey(id)
   }
 
   /** Turn raw matrix toggles into a reviewable plan with missing-secret detection. */

@@ -48,16 +48,25 @@ export class ConnectionEngine {
     return existsSync(path) ? readFileSync(path, 'utf8') : ''
   }
 
-  /** Build the post-change config object for one client given its plan items. */
-  private computeNext(client: DetectedClient, items: PlanItem[]): Record<string, unknown> {
+  /**
+   * Build the post-change config object for one client given its plan items.
+   * `placeholders` supplies a fallback value (e.g. "<SET:KEY>") for required
+   * secrets the user deferred, so the entry is written but plainly incomplete.
+   */
+  private computeNext(
+    client: DetectedClient,
+    items: PlanItem[],
+    placeholders: Record<string, string> = {}
+  ): Record<string, unknown> {
     const adapter = getAdapter(client.format)
     let config = parseConfig(this.readText(client.configPath))
     for (const item of items) {
       if (item.action === 'connect') {
-        const secrets = this.resolveSecrets(
-          item.server.id,
-          (item.server.requiredSecrets ?? []).map((s) => s.key)
-        )
+        const reqKeys = (item.server.requiredSecrets ?? []).map((s) => s.key)
+        const secrets = this.resolveSecrets(item.server.id, reqKeys)
+        for (const key of reqKeys) {
+          if (secrets[key] == null && placeholders[key] != null) secrets[key] = placeholders[key]
+        }
         const entry: ServerEntry = specToEntry(item.server, secrets)
         config = adapter.upsert(config, entry)
       } else {
@@ -91,7 +100,7 @@ export class ConnectionEngine {
   }
 
   /** Apply a plan: one backup + atomic write per affected client. */
-  apply(plan: ConnectionPlan): ApplyResult[] {
+  apply(plan: ConnectionPlan, placeholders: Record<string, string> = {}): ApplyResult[] {
     const results: ApplyResult[] = []
     for (const [clientId, items] of this.groupByClient(plan)) {
       const client = this.client(clientId)
@@ -111,7 +120,7 @@ export class ConnectionEngine {
       let backupId: string | undefined
       try {
         backupId = this.backup(client)
-        const nextText = serializeConfig(this.computeNext(client, items))
+        const nextText = serializeConfig(this.computeNext(client, items, placeholders))
         // Validate it's parseable before committing.
         parseConfig(nextText)
         this.atomicWrite(client.configPath, nextText)

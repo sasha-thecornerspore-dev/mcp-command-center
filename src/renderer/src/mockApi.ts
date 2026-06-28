@@ -73,7 +73,8 @@ const state: AppState = {
     sources: { bundled: true, remote: true, 'official-registry': true, web: true, scanner: true },
     dismissedSuggestionIds: [],
     favoriteServerIds: [],
-    baseBuild: 'standard'
+    baseBuild: 'standard',
+    keyDiscoverySources: { appEnv: true, otherClients: true, envFiles: false }
   },
   profiles: [
     {
@@ -84,7 +85,8 @@ const state: AppState = {
     }
   ],
   identityConfigs: [],
-  identitySecretsPresent: {}
+  identitySecretsPresent: {},
+  pendingKeys: []
 }
 
 const plan = (
@@ -190,6 +192,25 @@ export function createMockApi(): McpApi {
         ],
         ready: { node: true, python: false, docker: false }
       }),
-    installRuntime: (runtimeId) => ok({ runtimeId, ok: true, output: 'Installed.' })
+    installRuntime: (runtimeId) => ok({ runtimeId, ok: true, output: 'Installed.' }),
+    discoverSecrets: (keys) =>
+      ok(
+        Object.fromEntries(
+          keys.map((k) => [
+            k,
+            process.env[k]
+              ? [{ candidateId: `${k}#0`, source: 'app environment', preview: '••••…••••' }]
+              : []
+          ])
+        )
+      ),
+    useSecretCandidate: () => ok(true),
+    deferKeys: (p) =>
+      ok(
+        p.items.map((it) => ({ clientId: it.clientId, serverId: it.server.id, action: it.action, ok: true }))
+      ),
+    getPendingKeys: () => ok([]),
+    resolvePendingKey: () => ok([]),
+    dismissPendingKey: () => ok([])
   }
 }

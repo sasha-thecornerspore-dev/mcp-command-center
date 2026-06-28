@@ -1,6 +1,13 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
-import type { Preferences, Profile, Suggestion, CatalogSource, ServerIdentityConfig } from '../../shared/types'
+import type {
+  Preferences,
+  Profile,
+  Suggestion,
+  CatalogSource,
+  ServerIdentityConfig,
+  PendingKey
+} from '../../shared/types'
 
 const DEFAULT_PREFS: Preferences = {
   anthropicApiKeyConfigured: false,
@@ -14,7 +21,8 @@ const DEFAULT_PREFS: Preferences = {
   } as Record<CatalogSource, boolean>,
   dismissedSuggestionIds: [],
   favoriteServerIds: [],
-  baseBuild: 'standard'
+  baseBuild: 'standard',
+  keyDiscoverySources: { appEnv: true, otherClients: true, envFiles: false }
 }
 
 interface Persisted {
@@ -23,6 +31,7 @@ interface Persisted {
   dismissedSuggestions: string[]
   suggestions: Suggestion[]
   identityConfigs: ServerIdentityConfig[]
+  pendingKeys: PendingKey[]
 }
 
 /** Simple JSON-file persistence for preferences, profiles, and surfaced suggestions. */
@@ -41,17 +50,26 @@ export class Store {
       profiles: [],
       dismissedSuggestions: [],
       suggestions: [],
-      identityConfigs: []
+      identityConfigs: [],
+      pendingKeys: []
     }
     if (!existsSync(this.file)) return base
     try {
       const parsed = JSON.parse(readFileSync(this.file, 'utf8')) as Partial<Persisted>
       return {
-        preferences: { ...DEFAULT_PREFS, ...(parsed.preferences ?? {}) },
+        preferences: {
+          ...DEFAULT_PREFS,
+          ...(parsed.preferences ?? {}),
+          keyDiscoverySources: {
+            ...DEFAULT_PREFS.keyDiscoverySources,
+            ...(parsed.preferences?.keyDiscoverySources ?? {})
+          }
+        },
         profiles: parsed.profiles ?? [],
         dismissedSuggestions: parsed.dismissedSuggestions ?? [],
         suggestions: parsed.suggestions ?? [],
-        identityConfigs: parsed.identityConfigs ?? []
+        identityConfigs: parsed.identityConfigs ?? [],
+        pendingKeys: parsed.pendingKeys ?? []
       }
     } catch {
       return base
@@ -110,6 +128,28 @@ export class Store {
     this.data.identityConfigs = this.data.identityConfigs.filter((c) => c.serverId !== serverId)
     this.persist()
     return this.data.identityConfigs
+  }
+
+  getPendingKeys(): PendingKey[] {
+    return this.data.pendingKeys
+  }
+
+  /** Add pending keys, replacing any existing entry for the same server+key. */
+  addPendingKeys(keys: PendingKey[]): PendingKey[] {
+    for (const pk of keys) {
+      this.data.pendingKeys = this.data.pendingKeys.filter(
+        (e) => !(e.serverId === pk.serverId && e.key === pk.key)
+      )
+      this.data.pendingKeys.push(pk)
+    }
+    this.persist()
+    return this.data.pendingKeys
+  }
+
+  removePendingKey(id: string): PendingKey[] {
+    this.data.pendingKeys = this.data.pendingKeys.filter((p) => p.id !== id)
+    this.persist()
+    return this.data.pendingKeys
   }
 
   getSuggestions(): Suggestion[] {
