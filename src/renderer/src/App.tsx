@@ -53,7 +53,7 @@ function Shell(): React.JSX.Element {
             </button>
           ))}
         </nav>
-        <div className="p-4 text-xs text-muted border-t border-edge">v0.2.0 · local control plane</div>
+        <div className="p-4 text-xs text-muted border-t border-edge">v0.3.0 · local control plane</div>
       </aside>
 
       <main className="flex-1 overflow-auto">
