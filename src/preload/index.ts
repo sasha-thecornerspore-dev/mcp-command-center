@@ -13,7 +13,10 @@ import type {
   ServerSpec,
   ServerIdentityConfig,
   SwitchResult,
-  HealthCheckResult
+  HealthCheckResult,
+  SecretCandidate,
+  PendingKey,
+  UpdateStatus
 } from '../shared/types'
 import type { McpApi } from '../shared/api'
 
@@ -58,7 +61,26 @@ const api: McpApi = {
   checkTrends: (): Promise<Suggestion[]> => ipcRenderer.invoke(IPC.checkTrends),
   getReadiness: () => ipcRenderer.invoke(IPC.getReadiness),
   installRuntime: (runtimeId: string, command: string) =>
-    ipcRenderer.invoke(IPC.installRuntime, runtimeId, command)
+    ipcRenderer.invoke(IPC.installRuntime, runtimeId, command),
+  discoverSecrets: (keys: string[]): Promise<Record<string, SecretCandidate[]>> =>
+    ipcRenderer.invoke(IPC.discoverSecrets, keys),
+  useSecretCandidate: (key: string, candidateId: string): Promise<boolean> =>
+    ipcRenderer.invoke(IPC.useSecretCandidate, key, candidateId),
+  deferKeys: (plan: ConnectionPlan, keys: string[], remind: boolean): Promise<ApplyResult[]> =>
+    ipcRenderer.invoke(IPC.deferKeys, plan, keys, remind),
+  getPendingKeys: (): Promise<PendingKey[]> => ipcRenderer.invoke(IPC.getPendingKeys),
+  resolvePendingKey: (id: string, value: string): Promise<PendingKey[]> =>
+    ipcRenderer.invoke(IPC.resolvePendingKey, id, value),
+  dismissPendingKey: (id: string): Promise<PendingKey[]> =>
+    ipcRenderer.invoke(IPC.dismissPendingKey, id),
+  getUpdateStatus: (): Promise<UpdateStatus> => ipcRenderer.invoke(IPC.getUpdateStatus),
+  checkForUpdates: (): Promise<void> => ipcRenderer.invoke(IPC.checkForUpdates),
+  installUpdate: (): Promise<void> => ipcRenderer.invoke(IPC.installUpdate),
+  onUpdateStatus: (cb: (s: UpdateStatus) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, s: UpdateStatus): void => cb(s)
+    ipcRenderer.on(IPC.updateStatusPush, handler)
+    return () => ipcRenderer.removeListener(IPC.updateStatusPush, handler)
+  }
 }
 
 export type MccApi = typeof api

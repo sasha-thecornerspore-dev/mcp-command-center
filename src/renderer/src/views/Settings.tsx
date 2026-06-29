@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useAppState } from '../state'
 import { api } from '../api'
 import { Card, Button, Badge, Spinner } from '../components/ui'
-import type { CatalogSource } from '@shared/types'
+import type { CatalogSource, KeyDiscoverySources, UpdateCheckFrequency } from '@shared/types'
 
 const SOURCE_LABELS: Record<CatalogSource, string> = {
   bundled: 'Bundled curated registry',
@@ -39,8 +39,20 @@ export function Settings(): React.JSX.Element {
     await reload()
   }
 
+  async function toggleDiscovery(field: keyof KeyDiscoverySources, on: boolean): Promise<void> {
+    await api.savePreferences({
+      keyDiscoverySources: { ...prefs.keyDiscoverySources, [field]: on }
+    })
+    await reload()
+  }
+
   async function setRefresh(hours: number): Promise<void> {
     await api.savePreferences({ catalogRefreshHours: hours })
+    await reload()
+  }
+
+  async function setUpdateFrequency(freq: UpdateCheckFrequency): Promise<void> {
+    await api.savePreferences({ updateCheckFrequency: freq })
     await reload()
   }
 
@@ -95,6 +107,36 @@ export function Settings(): React.JSX.Element {
       </Card>
 
       <Card>
+        <h2 className="font-medium text-gray-100 mb-1">Key auto-detection sources</h2>
+        <p className="text-sm text-muted mb-3">
+          When connecting a server that needs an API key, the app can look in these places before
+          asking you to type it in.
+        </p>
+        <div className="space-y-2">
+          {(
+            [
+              ['appEnv', 'App environment variables', 'PATH, env vars visible to this process.'],
+              ['otherClients', 'Other AI clients\' configs', 'Reuse a key already set in Claude Desktop, Cursor, etc.'],
+              ['envFiles', '.env files (home / project dirs)', 'More sensitive — disabled by default.']
+            ] as [keyof KeyDiscoverySources, string, string][]
+          ).map(([field, label, hint]) => (
+            <label key={field} className="flex items-start gap-3 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-0.5 accent-claw"
+                checked={prefs.keyDiscoverySources?.[field] ?? false}
+                onChange={(e) => toggleDiscovery(field, e.target.checked)}
+              />
+              <span>
+                <span className="text-gray-300">{label}</span>
+                <span className="block text-xs text-muted">{hint}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
         <h2 className="font-medium text-gray-100 mb-3">Catalog auto-refresh</h2>
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-300">Every</span>
@@ -108,6 +150,27 @@ export function Settings(): React.JSX.Element {
             <option value={24}>24 hours</option>
             <option value={72}>3 days</option>
             <option value={168}>weekly</option>
+          </select>
+        </div>
+      </Card>
+
+      <Card>
+        <h2 className="font-medium text-gray-100 mb-1">App auto-update</h2>
+        <p className="text-sm text-muted mb-3">
+          How often to check GitHub Releases for a newer build. The download happens in the
+          background; you control when to install.
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-300">Check</span>
+          <select
+            value={prefs.updateCheckFrequency ?? 'launch'}
+            onChange={(e) => setUpdateFrequency(e.target.value as UpdateCheckFrequency)}
+            className="bg-ink border border-edge rounded-md px-3 py-1.5 text-sm"
+          >
+            <option value="never">Never</option>
+            <option value="launch">On launch</option>
+            <option value="daily">Every day</option>
+            <option value="weekly">Every week</option>
           </select>
         </div>
       </Card>

@@ -1,12 +1,13 @@
-import { ipcMain } from 'electron'
+import { ipcMain, app } from 'electron'
 import { IPC } from '../shared/types'
 import type { ConnectionPlan, Profile, Preferences, ServerIdentityConfig } from '../shared/types'
 import type { Services } from './services'
+import type { UpdaterService } from './services/updater'
 import { getReadiness, runInstall } from './services/systemReadiness'
 
 /** Register every IPC handler against the shared Services instance. */
-export function registerIpc(services: Services): void {
-  ipcMain.handle(IPC.getState, () => services.getState())
+export function registerIpc(services: Services, updater: UpdaterService): void {
+  ipcMain.handle(IPC.getState, () => ({ ...services.getState(), updateStatus: updater.getStatus() }))
 
   ipcMain.handle(IPC.detectClients, () => services.refreshClients())
 
@@ -55,9 +56,13 @@ export function registerIpc(services: Services): void {
     return true
   })
 
-  ipcMain.handle(IPC.savePreferences, (_e, prefs: Partial<Preferences>) =>
-    services.store.savePreferences(prefs)
-  )
+  ipcMain.handle(IPC.savePreferences, (_e, prefs: Partial<Preferences>) => {
+    const saved = services.store.savePreferences(prefs)
+    if (prefs.updateCheckFrequency != null && app.isPackaged) {
+      updater.scheduleChecks(prefs.updateCheckFrequency)
+    }
+    return saved
+  })
 
   ipcMain.handle(IPC.saveProfile, (_e, profile: Profile) => services.store.saveProfile(profile))
 
@@ -95,4 +100,31 @@ export function registerIpc(services: Services): void {
   ipcMain.handle(IPC.installRuntime, (_e, runtimeId: string, command: string) =>
     runInstall(runtimeId, command)
   )
+
+  ipcMain.handle(IPC.discoverSecrets, (_e, keys: string[]) => {
+    services.refreshClients() // scan current client configs for matching keys
+    return services.discoverSecrets(keys)
+  })
+
+  ipcMain.handle(IPC.useSecretCandidate, (_e, key: string, candidateId: string) =>
+    services.useSecretCandidate(key, candidateId)
+  )
+
+  ipcMain.handle(
+    IPC.deferKeys,
+    (_e, plan: ConnectionPlan, keys: string[], remind: boolean) =>
+      services.deferKeys(plan, keys, remind)
+  )
+
+  ipcMain.handle(IPC.getPendingKeys, () => services.store.getPendingKeys())
+
+  ipcMain.handle(IPC.resolvePendingKey, (_e, id: string, value: string) =>
+    services.resolvePendingKey(id, value)
+  )
+
+  ipcMain.handle(IPC.dismissPendingKey, (_e, id: string) => services.dismissPendingKey(id))
+
+  ipcMain.handle(IPC.getUpdateStatus, () => updater.getStatus())
+  ipcMain.handle(IPC.checkForUpdates, () => { updater.check() })
+  ipcMain.handle(IPC.installUpdate, () => { updater.install() })
 }

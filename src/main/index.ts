@@ -3,6 +3,7 @@ import { join } from 'path'
 import { existsSync } from 'fs'
 import { registerIpc } from './ipc'
 import { Services, resolveBundledRegistry } from './services'
+import { UpdaterService } from './services/updater'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -90,10 +91,16 @@ app.whenReady().then(() => {
     userData: app.getPath('userData'),
     bundledRegistry: resolveBundledRegistry(app.getAppPath(), process.resourcesPath)
   })
-  registerIpc(services)
+  const updater = new UpdaterService(() => mainWindow)
+  registerIpc(services, updater)
 
   createWindow()
   createTray()
+
+  if (app.isPackaged) {
+    const freq = services.store.getPreferences().updateCheckFrequency
+    updater.scheduleChecks(freq)
+  }
 
   // Smoke-test hook: MCC_SMOKE=1 boots the app then cleanly exits, so CI/dev can
   // verify the main process initializes without leaving a window open.

@@ -1,15 +1,26 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useAppState } from '../state'
 import { api } from '../api'
 import { Card, Badge, Button, Spinner } from '../components/ui'
 import { PlanReviewModal } from '../components/PlanReviewModal'
-import type { ConnectionPlan, Suggestion } from '@shared/types'
+import type { ConnectionPlan, PendingKey, Suggestion, UpdateStatus } from '@shared/types'
 
 export function Dashboard({ onNavigate }: { onNavigate: (t: any) => void }): React.JSX.Element {
   const { state, reload } = useAppState()
   const [plan, setPlan] = useState<ConnectionPlan | null>(null)
   const [scanning, setScanning] = useState(false)
   const [checking, setChecking] = useState(false)
+  const [resolvingKey, setResolvingKey] = useState<PendingKey | null>(null)
+  const [resolveValue, setResolveValue] = useState('')
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>(
+    state?.updateStatus ?? { phase: 'idle' }
+  )
+  const [installing, setInstalling] = useState(false)
+
+  useEffect(() => {
+    if (state?.updateStatus) setUpdateStatus(state.updateStatus)
+    return api.onUpdateStatus(setUpdateStatus)
+  }, [])
 
   if (!state) return <Spinner />
 
@@ -52,8 +63,107 @@ export function Dashboard({ onNavigate }: { onNavigate: (t: any) => void }): Rea
     setPlan(p)
   }
 
+  async function resolveKey(pk: PendingKey): Promise<void> {
+    if (!resolveValue.trim()) return
+    await api.resolvePendingKey(pk.id, resolveValue.trim())
+    setResolvingKey(null)
+    setResolveValue('')
+    await reload()
+  }
+
+  const remindKeys = (state.pendingKeys ?? []).filter((k) => k.remind)
+
   return (
     <div className="space-y-6">
+      {/* Pending key reminders */}
+      {remindKeys.length > 0 && (
+        <div className="space-y-2">
+          {remindKeys.map((pk) => (
+            <div
+              key={pk.id}
+              className="flex items-start gap-3 bg-warn/10 border border-warn/30 rounded-lg px-4 py-3"
+            >
+              <span className="text-warn mt-0.5">⚠</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-gray-200">
+                  <span className="font-medium">{pk.serverName}</span> needs{' '}
+                  <code className="font-mono text-warn">{pk.label}</code> to work.
+                </p>
+                <p className="text-xs text-muted mt-0.5">
+                  Clients affected: {pk.clientIds.join(', ')}
+                </p>
+                {resolvingKey?.id === pk.id && (
+                  <div className="flex gap-2 mt-2">
+                    <input
+                      type="password"
+                      autoFocus
+                      className="flex-1 bg-ink border border-edge rounded-md px-3 py-1.5 text-sm font-mono"
+                      placeholder={pk.key}
+                      value={resolveValue}
+                      onChange={(e) => setResolveValue(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && resolveKey(pk)}
+                    />
+                    <Button variant="primary" onClick={() => resolveKey(pk)}>
+                      Save &amp; apply
+                    </Button>
+                    <Button variant="ghost" onClick={() => setResolvingKey(null)}>
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {resolvingKey?.id !== pk.id && (
+                <div className="flex gap-2 shrink-0">
+                  <Button variant="ghost" onClick={() => { setResolvingKey(pk); setResolveValue('') }}>
+                    Set now
+                  </Button>
+                  <Button variant="ghost" onClick={() => api.dismissPendingKey(pk.id).then(reload)}>
+                    Dismiss
+                  </Button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Update banner */}
+      {(updateStatus.phase === 'available' || updateStatus.phase === 'downloading' || updateStatus.phase === 'ready') && (
+        <div className="flex items-center gap-3 bg-claw/10 border border-claw/30 rounded-lg px-4 py-3">
+          <span className="text-claw shrink-0">↑</span>
+          <div className="flex-1 min-w-0 text-sm">
+            {updateStatus.phase === 'available' && (
+              <span className="text-gray-200">
+                Update <span className="font-medium">{updateStatus.version}</span> available — downloading…
+              </span>
+            )}
+            {updateStatus.phase === 'downloading' && (
+              <span className="text-gray-200">
+                Downloading update {updateStatus.version ?? ''}…{' '}
+                <span className="text-claw font-medium">{updateStatus.percent ?? 0}%</span>
+              </span>
+            )}
+            {updateStatus.phase === 'ready' && (
+              <span className="text-gray-200">
+                Update <span className="font-medium">{updateStatus.version}</span> ready — restart to install.
+              </span>
+            )}
+          </div>
+          {updateStatus.phase === 'ready' && (
+            <Button
+              variant="primary"
+              disabled={installing}
+              onClick={async () => {
+                setInstalling(true)
+                await api.installUpdate()
+              }}
+            >
+              {installing ? 'Restarting…' : 'Restart & install'}
+            </Button>
+          )}
+        </div>
+      )}
+
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-gray-100">Command Center</h1>
