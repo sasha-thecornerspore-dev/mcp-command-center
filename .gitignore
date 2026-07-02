@@ -11,3 +11,7 @@ coverage/
 .vite/
 
 *.tsbuildinfo
+certs/
+*.pfx
+*.p12
+*.pfx.b64
