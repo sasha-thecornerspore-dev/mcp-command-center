@@ -27,6 +27,14 @@ export function Dashboard({ onNavigate }: { onNavigate: (t: any) => void }): Rea
   const installed = state.clients.filter((c) => c.installed)
   const activeConnections = state.clients.reduce((n, c) => n + c.servers.length, 0)
 
+  // Hide suggestions that are already connected to every target client
+  const activeSuggestions = state.suggestions.filter((s) => {
+    const targets = s.suggestedClients.length ? s.suggestedClients : installed.map((c) => c.id)
+    return !targets.every((clientId) =>
+      state.clients.find((c) => c.id === clientId)?.servers.some((srv) => srv.id === s.server?.id)
+    )
+  })
+
   async function runScan(): Promise<void> {
     setScanning(true)
     try {
@@ -193,11 +201,14 @@ export function Dashboard({ onNavigate }: { onNavigate: (t: any) => void }): Rea
           {state.clients.map((c) => (
             <Card key={c.id} className="flex items-center justify-between">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-medium text-gray-100">{c.name}</span>
                   <Badge tone={c.installed ? 'good' : 'muted'}>
                     {c.installed ? 'installed' : 'not found'}
                   </Badge>
+                  {c.warnings?.map((w, i) => (
+                    <Badge key={i} tone="warn">{w}</Badge>
+                  ))}
                 </div>
                 <div className="text-xs text-muted font-mono mt-1 truncate max-w-xs">
                   {c.configPath}
@@ -221,14 +232,21 @@ export function Dashboard({ onNavigate }: { onNavigate: (t: any) => void }): Rea
         <h2 className="text-sm font-semibold text-muted uppercase tracking-wide mb-3">
           Suggested & New
         </h2>
-        {state.suggestions.length === 0 ? (
+        {activeSuggestions.length === 0 ? (
           <Card className="text-sm text-muted">
-            Nothing yet. Run <b>Scan system</b> for suggested defaults, or{' '}
-            <b>Check for new MCPs</b> to pull the latest from the official registry.
+            {state.suggestions.length > 0
+              ? 'All suggestions are already connected.'
+              : 'Nothing yet. Run '}
+            {state.suggestions.length === 0 && (
+              <>
+                <b>Scan system</b> for suggested defaults, or{' '}
+                <b>Check for new MCPs</b> to pull the latest from the official registry.
+              </>
+            )}
           </Card>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            {state.suggestions.slice(0, 8).map((s) => (
+            {activeSuggestions.slice(0, 8).map((s) => (
               <Card key={s.id}>
                 <div className="flex items-start justify-between gap-2">
                   <div>

@@ -152,6 +152,37 @@ export function Matrix(): React.JSX.Element {
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-gray-100">{s.name}</span>
                     {runtimeGap(s.runtime) && <Badge tone="warn">{runtimeGap(s.runtime)}</Badge>}
+                    <button
+                      onClick={() => {
+                        const allOn = clients.every((c) => {
+                          const k = key(c.id, s.id)
+                          const p = pending[k]
+                          return p === 'connect' || (!p && isConnected(c.id, s.id))
+                        })
+                        clients.forEach((c) => {
+                          const k = key(c.id, s.id)
+                          const connected = isConnected(c.id, s.id)
+                          const desired: Action = allOn ? 'disconnect' : 'connect'
+                          setPending((prev) => {
+                            const next = { ...prev }
+                            if ((connected && desired === 'connect') || (!connected && desired === 'disconnect')) {
+                              delete next[k]
+                            } else {
+                              next[k] = desired
+                            }
+                            return next
+                          })
+                        })
+                      }}
+                      className="text-[10px] text-muted hover:text-claw px-1 rounded border border-transparent hover:border-edge"
+                      title="Toggle all clients for this server"
+                    >
+                      {clients.every((c) => {
+                        const k = key(c.id, s.id)
+                        const p = pending[k]
+                        return p === 'connect' || (!p && isConnected(c.id, s.id))
+                      }) ? '−all' : '+all'}
+                    </button>
                   </div>
                   <div className="text-xs text-muted">{s.tags.slice(0, 3).join(' · ')}</div>
                   {(() => {

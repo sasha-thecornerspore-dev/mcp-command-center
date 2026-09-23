@@ -47,11 +47,14 @@ export function Profiles(): React.JSX.Element {
                 <Badge tone="claw">{p.serverIds.length} servers</Badge>
               </div>
               <div className="flex flex-wrap gap-1 mt-2">
-                {p.serverIds.map((id) => (
-                  <Badge key={id} tone="muted">
-                    {id}
-                  </Badge>
-                ))}
+                {p.serverIds.map((id) => {
+                  const name = state.catalog.find((s) => s.id === id)?.name ?? id
+                  return (
+                    <Badge key={id} tone="muted">
+                      {name}
+                    </Badge>
+                  )
+                })}
               </div>
               <div className="flex gap-2 mt-3">
                 <Button variant="primary" onClick={() => setApplying(p)}>

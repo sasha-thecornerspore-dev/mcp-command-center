@@ -23,6 +23,20 @@ export function CatalogView(): React.JSX.Element {
     )
   }, [state, filter])
 
+  // Map serverId -> installed client IDs that already have it connected
+  const connectedTo = useMemo(() => {
+    const m = new Map<string, string[]>()
+    if (!state) return m
+    for (const client of state.clients) {
+      if (!client.installed) continue
+      for (const srv of client.servers) {
+        if (!m.has(srv.id)) m.set(srv.id, [])
+        m.get(srv.id)!.push(client.id)
+      }
+    }
+    return m
+  }, [state])
+
   if (!state) return <Spinner />
 
   const installed = state.clients.filter((c) => c.installed)
@@ -74,6 +88,10 @@ export function CatalogView(): React.JSX.Element {
                 </Badge>
               ))}
               {s.requiredSecrets?.length ? <Badge tone="warn">needs secret</Badge> : null}
+              {(connectedTo.get(s.id) ?? []).map((cid) => {
+                const name = state.clients.find((c) => c.id === cid)?.name ?? cid
+                return <Badge key={cid} tone="good">{name}</Badge>
+              })}
             </div>
             <div className="flex gap-2 mt-3">
               <Button variant="primary" onClick={() => setPicking(s)} disabled={!installed.length}>
@@ -93,6 +111,7 @@ export function CatalogView(): React.JSX.Element {
         <ClientPicker
           server={picking}
           clients={installed.map((c) => ({ id: c.id, name: c.name }))}
+          alreadyConnected={connectedTo.get(picking.id) ?? []}
           onCancel={() => setPicking(null)}
           onConfirm={(ids) => addTo(picking, ids)}
         />
@@ -106,32 +125,41 @@ export function CatalogView(): React.JSX.Element {
 function ClientPicker({
   server,
   clients,
+  alreadyConnected,
   onCancel,
   onConfirm
 }: {
   server: ServerSpec
   clients: { id: string; name: string }[]
+  alreadyConnected: string[]
   onCancel: () => void
   onConfirm: (ids: string[]) => void
 }): React.JSX.Element {
-  const [selected, setSelected] = useState<string[]>(clients.map((c) => c.id))
+  const [selected, setSelected] = useState<string[]>(
+    clients.filter((c) => !alreadyConnected.includes(c.id)).map((c) => c.id)
+  )
   return (
     <Modal title={`Add ${server.name} to clients`} onClose={onCancel}>
       <div className="space-y-2">
-        {clients.map((c) => (
-          <label key={c.id} className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={selected.includes(c.id)}
-              onChange={(e) =>
-                setSelected((prev) =>
-                  e.target.checked ? [...prev, c.id] : prev.filter((x) => x !== c.id)
-                )
-              }
-            />
-            {c.name}
-          </label>
-        ))}
+        {clients.map((c) => {
+          const done = alreadyConnected.includes(c.id)
+          return (
+            <label key={c.id} className={`flex items-center gap-2 text-sm ${done ? 'opacity-50' : ''}`}>
+              <input
+                type="checkbox"
+                checked={selected.includes(c.id)}
+                disabled={done}
+                onChange={(e) =>
+                  setSelected((prev) =>
+                    e.target.checked ? [...prev, c.id] : prev.filter((x) => x !== c.id)
+                  )
+                }
+              />
+              {c.name}
+              {done && <span className="text-good text-xs">already connected</span>}
+            </label>
+          )
+        })}
       </div>
       <div className="flex justify-end gap-2 mt-4">
         <Button variant="ghost" onClick={onCancel}>
