@@ -212,6 +212,8 @@ export interface UpdateStatus {
 
 export interface Preferences {
   anthropicApiKeyConfigured: boolean
+  /** True when a claude.ai OAuth token is stored (alternative to an API key). */
+  claudeOAuthConfigured: boolean
   catalogRefreshHours: number
   sources: Record<CatalogSource, boolean>
   backupDir?: string
@@ -352,7 +354,11 @@ export const IPC = {
   installUpdate: 'updater:install',
   getUpdateStatus: 'updater:getStatus',
   /** Push channel: main sends UpdateStatus to renderer when phase changes. */
-  updateStatusPush: 'updater:status'
+  updateStatusPush: 'updater:status',
+  /** Store a claude.ai OAuth token as the AI auth credential. */
+  setOAuthToken: 'secrets:setOAuthToken',
+  /** Auto-detect a token from ~/.claude/.credentials.json or ANTHROPIC_AUTH_TOKEN env. */
+  detectClaudeToken: 'ai:detectToken'
 } as const
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC]

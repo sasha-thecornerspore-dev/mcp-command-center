@@ -3,6 +3,7 @@ import { join } from 'path'
 import { safeStorage } from 'electron'
 
 const API_KEY = 'ANTHROPIC_API_KEY'
+const OAUTH_TOKEN = 'CLAUDE_OAUTH_TOKEN'
 
 /**
  * Secret store backed by Electron safeStorage (OS-provided encryption — DPAPI on
@@ -95,5 +96,17 @@ export class SecretStore {
 
   hasApiKey(): boolean {
     return this.has(API_KEY)
+  }
+
+  setOAuthToken(value: string): void {
+    this.set(OAUTH_TOKEN, value)
+  }
+
+  getOAuthToken(): string | undefined {
+    return this.get(OAUTH_TOKEN)
+  }
+
+  hasOAuthToken(): boolean {
+    return this.has(OAUTH_TOKEN)
   }
 }

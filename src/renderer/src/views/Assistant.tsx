@@ -21,7 +21,8 @@ export function Assistant(): React.JSX.Element {
 
   if (!state) return <Spinner />
 
-  const hasKey = state.preferences.anthropicApiKeyConfigured
+  const hasKey =
+    state.preferences.anthropicApiKeyConfigured || state.preferences.claudeOAuthConfigured
 
   async function advise(): Promise<void> {
     if (!request.trim()) return
@@ -53,7 +54,8 @@ export function Assistant(): React.JSX.Element {
 
       {!hasKey && (
         <Card className="text-sm text-warn border-warn/40 bg-warn/5">
-          No Anthropic API key set. Add one in <b>Settings</b> to enable AI recommendations.
+          No API key or Claude session configured. Add one in <b>Settings</b> to enable AI
+          recommendations.
         </Card>
       )}
 

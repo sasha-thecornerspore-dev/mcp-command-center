@@ -11,6 +11,7 @@ import type {
 
 const DEFAULT_PREFS: Preferences = {
   anthropicApiKeyConfigured: false,
+  claudeOAuthConfigured: false,
   catalogRefreshHours: 24,
   sources: {
     bundled: true,

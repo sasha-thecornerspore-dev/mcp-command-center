@@ -25,14 +25,21 @@ export class AiAdvisor {
   ) {}
 
   isConfigured(): boolean {
-    return this.secrets.hasApiKey()
+    return this.secrets.hasApiKey() || this.secrets.hasOAuthToken()
   }
 
   async recommend(request: string, clients: DetectedClient[]): Promise<Recommendation> {
     const apiKey = this.secrets.getApiKey()
-    if (!apiKey) throw new Error('No Anthropic API key configured. Add one in Settings.')
+    const oauthToken = this.secrets.getOAuthToken()
 
-    const client = new Anthropic({ apiKey })
+    let client: Anthropic
+    if (apiKey) {
+      client = new Anthropic({ apiKey })
+    } else if (oauthToken) {
+      client = new Anthropic({ authToken: oauthToken })
+    } else {
+      throw new Error('No API key or Claude session configured. Add one in Settings.')
+    }
     const catalogBrief = this.catalog
       .all()
       .map((s) => `- ${s.id}: ${s.name} — ${s.description} [tags: ${s.tags.join(', ')}]`)

@@ -1,4 +1,7 @@
 import { ipcMain, app } from 'electron'
+import { existsSync, readFileSync } from 'fs'
+import { join } from 'path'
+import { homedir } from 'os'
 import { IPC } from '../shared/types'
 import type { ConnectionPlan, Profile, Preferences, ServerIdentityConfig } from '../shared/types'
 import type { Services } from './services'
@@ -127,4 +130,33 @@ export function registerIpc(services: Services, updater: UpdaterService): void {
   ipcMain.handle(IPC.getUpdateStatus, () => updater.getStatus())
   ipcMain.handle(IPC.checkForUpdates, () => { updater.check() })
   ipcMain.handle(IPC.installUpdate, () => { updater.install() })
+
+  ipcMain.handle(IPC.setOAuthToken, (_e, token: string) => {
+    services.secrets.setOAuthToken(token)
+    services.store.savePreferences({ claudeOAuthConfigured: true })
+    return true
+  })
+
+  ipcMain.handle(IPC.detectClaudeToken, () => {
+    const envToken = process.env.ANTHROPIC_AUTH_TOKEN || process.env.CLAUDE_ACCESS_TOKEN
+    if (envToken) {
+      services.secrets.setOAuthToken(envToken)
+      services.store.savePreferences({ claudeOAuthConfigured: true })
+      return { found: true, source: 'environment variable' }
+    }
+    const credPath = join(homedir(), '.claude', '.credentials.json')
+    if (existsSync(credPath)) {
+      try {
+        const creds = JSON.parse(readFileSync(credPath, 'utf8')) as Record<string, unknown>
+        const oauth = creds?.claudeAiOauth as Record<string, string> | undefined
+        const token = oauth?.accessToken
+        if (token) {
+          services.secrets.setOAuthToken(token)
+          services.store.savePreferences({ claudeOAuthConfigured: true })
+          return { found: true, source: 'Claude Code credentials' }
+        }
+      } catch { /* ignore */ }
+    }
+    return { found: false }
+  })
 }

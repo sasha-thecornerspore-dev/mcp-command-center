@@ -76,6 +76,9 @@ const api: McpApi = {
   getUpdateStatus: (): Promise<UpdateStatus> => ipcRenderer.invoke(IPC.getUpdateStatus),
   checkForUpdates: (): Promise<void> => ipcRenderer.invoke(IPC.checkForUpdates),
   installUpdate: (): Promise<void> => ipcRenderer.invoke(IPC.installUpdate),
+  setOAuthToken: (token: string): Promise<boolean> => ipcRenderer.invoke(IPC.setOAuthToken, token),
+  detectClaudeToken: (): Promise<{ found: boolean; source?: string }> =>
+    ipcRenderer.invoke(IPC.detectClaudeToken),
   onUpdateStatus: (cb: (s: UpdateStatus) => void): (() => void) => {
     const handler = (_e: Electron.IpcRendererEvent, s: UpdateStatus): void => cb(s)
     ipcRenderer.on(IPC.updateStatusPush, handler)

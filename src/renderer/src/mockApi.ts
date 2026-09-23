@@ -70,6 +70,7 @@ const state: AppState = {
   suggestions,
   preferences: {
     anthropicApiKeyConfigured: true,
+    claudeOAuthConfigured: false,
     catalogRefreshHours: 24,
     sources: { bundled: true, remote: true, 'official-registry': true, web: true, scanner: true },
     dismissedSuggestionIds: [],
@@ -218,6 +219,8 @@ export function createMockApi(): McpApi {
     getUpdateStatus: (): Promise<UpdateStatus> => ok({ phase: 'idle' }),
     checkForUpdates: () => ok(undefined),
     installUpdate: () => ok(undefined),
-    onUpdateStatus: () => () => { /* no-op */ }
+    onUpdateStatus: () => () => { /* no-op */ },
+    setOAuthToken: () => ok(true),
+    detectClaudeToken: () => ok({ found: false })
   }
 }

@@ -66,4 +66,8 @@ export interface McpApi {
   installUpdate(): Promise<void>
   /** Subscribe to updater phase-change push events. Returns an unsubscribe fn. */
   onUpdateStatus(cb: (s: UpdateStatus) => void): () => void
+  /** Store a claude.ai OAuth token for use instead of an API key. */
+  setOAuthToken(token: string): Promise<boolean>
+  /** Auto-detect token from ~/.claude/.credentials.json or ANTHROPIC_AUTH_TOKEN env. */
+  detectClaudeToken(): Promise<{ found: boolean; source?: string }>
 }

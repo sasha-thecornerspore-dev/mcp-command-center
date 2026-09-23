@@ -17,6 +17,11 @@ export function Settings(): React.JSX.Element {
   const [apiKey, setApiKey] = useState('')
   const [savingKey, setSavingKey] = useState(false)
   const [keySaved, setKeySaved] = useState(false)
+  const [oauthToken, setOauthToken] = useState('')
+  const [savingOauth, setSavingOauth] = useState(false)
+  const [oauthSaved, setOauthSaved] = useState(false)
+  const [detecting, setDetecting] = useState(false)
+  const [detectMsg, setDetectMsg] = useState<string | null>(null)
 
   if (!state) return <Spinner />
   const prefs = state.preferences
@@ -56,6 +61,38 @@ export function Settings(): React.JSX.Element {
     await reload()
   }
 
+  async function saveOauthToken(): Promise<void> {
+    if (!oauthToken.trim()) return
+    setSavingOauth(true)
+    try {
+      await api.setOAuthToken(oauthToken.trim())
+      setOauthToken('')
+      setOauthSaved(true)
+      setDetectMsg(null)
+      await reload()
+    } finally {
+      setSavingOauth(false)
+    }
+  }
+
+  async function autoDetect(): Promise<void> {
+    setDetecting(true)
+    setDetectMsg(null)
+    try {
+      const result = await api.detectClaudeToken()
+      if (result.found) {
+        setDetectMsg(`Detected from ${result.source}.`)
+        await reload()
+      } else {
+        setDetectMsg(
+          'Not found. Try setting ANTHROPIC_AUTH_TOKEN in your environment, or paste a token below.'
+        )
+      }
+    } finally {
+      setDetecting(false)
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-2xl">
       <header>
@@ -88,6 +125,46 @@ export function Settings(): React.JSX.Element {
           </Button>
         </div>
         {keySaved && <p className="text-xs text-good mt-2">Saved.</p>}
+      </Card>
+
+      <Card>
+        <h2 className="font-medium text-gray-100 mb-1">Claude session (alternative to API key)</h2>
+        <p className="text-sm text-muted mb-3">
+          Use your claude.ai login instead of a separate API key. Auto-detect reads{' '}
+          <code className="text-xs bg-ink px-1 py-0.5 rounded">~/.claude/.credentials.json</code>{' '}
+          or <code className="text-xs bg-ink px-1 py-0.5 rounded">ANTHROPIC_AUTH_TOKEN</code>.{' '}
+          {prefs.claudeOAuthConfigured ? (
+            <Badge tone="good">configured</Badge>
+          ) : (
+            <Badge tone="muted">not set</Badge>
+          )}
+        </p>
+        <div className="flex gap-2 mb-2">
+          <Button variant="default" onClick={autoDetect} disabled={detecting}>
+            {detecting ? 'Detecting…' : 'Auto-detect from Claude Code'}
+          </Button>
+        </div>
+        {detectMsg && (
+          <p className={`text-xs mb-2 ${detectMsg.startsWith('Detected') ? 'text-good' : 'text-warn'}`}>
+            {detectMsg}
+          </p>
+        )}
+        <div className="flex gap-2">
+          <input
+            type="password"
+            placeholder="Paste OAuth token…"
+            value={oauthToken}
+            onChange={(e) => {
+              setOauthToken(e.target.value)
+              setOauthSaved(false)
+            }}
+            className="flex-1 bg-ink border border-edge rounded-md px-3 py-2 text-sm font-mono"
+          />
+          <Button variant="primary" onClick={saveOauthToken} disabled={savingOauth || !oauthToken.trim()}>
+            {savingOauth ? 'Saving…' : 'Save'}
+          </Button>
+        </div>
+        {oauthSaved && <p className="text-xs text-good mt-2">Saved.</p>}
       </Card>
 
       <Card>
