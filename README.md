@@ -1,5 +1,8 @@
 # 🦀 MCP Command Center
 
+[![Release](https://img.shields.io/github/v/release/sasha-thecornerspore-dev/mcp-command-center?label=release)](https://github.com/sasha-thecornerspore-dev/mcp-command-center/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **One graphical, AI‑assisted control plane for connecting every AI client and every MCP server on your machine.**
 
 MCP Command Center detects the MCP‑capable AI tools you already have (Claude Desktop,
@@ -9,7 +12,7 @@ servers with one click — safely writing each client's real config file for you
 recommends connections with AI, scans your system for opportunities, and keeps an eye out
 for newly published MCP servers worth adding.
 
-> Cross‑platform desktop app (Windows + macOS + Linux), built with Electron + React.
+> Windows · macOS desktop app, built with Electron + React.
 
 ---
 
@@ -37,7 +40,7 @@ Regenerate them anytime with `npm run screenshots`.
 | **Detect** | Finds installed MCP clients and reads their current server wiring across OS‑specific config locations. |
 | **Connect** | A clients × servers matrix. Click a cell to connect/disconnect; review a diff; apply. Every write is backed up first. |
 | **Catalog** | A searchable library of MCP servers from a bundled curated registry, the official MCP registry, and live discovery. |
-| **AI Assistant** | Describe a goal in plain English (“automate my email + calendar”) → Claude recommends a bundle → you review the diff before anything changes. |
+| **AI Assistant** | Describe a goal in plain English (“automate my email + calendar”) → Claude recommends a bundle → you review the diff before anything changes. Works with an Anthropic API key **or** your existing Claude Code login — no extra key needed. |
 | **Scan** | Inspects your system (git, gh, docker, psql…) and proposes sensible default connections. |
 | **Trends** | Pulls newly published servers from the official MCP registry and surfaces “New & Relevant” cards. |
 | **Profiles** | Save reusable bundles (e.g. *Dev stack* = git + github + context7) and apply them across clients in one shot. |
@@ -95,10 +98,28 @@ npm run dist        # current platform
 ## 🧭 Quick start
 
 1. Launch the app — it auto‑detects your installed clients on the **Dashboard**.
-2. (Optional) Open **Settings** and paste your **Anthropic API key** to enable AI recommendations.
+2. (Optional) Enable AI recommendations in **Settings** — two paths:
+   - **Claude Code users:** click **Auto-detect from Claude Code** to reuse your existing login. No API key needed.
+   - **Everyone else:** paste an **Anthropic API key** (`sk-ant-…`).
 3. Click **Scan system** for suggested defaults, or **Check for new MCPs** to pull the latest from the official registry.
 4. Open the **Connection Matrix**, click cells to stage connections, then **Review & apply**.
 5. Save a **Profile** for any bundle you'll reuse.
+
+---
+
+## 🔍 Features in depth
+
+### Connection Matrix
+Clicks stage changes locally — nothing is written until you click **Review & apply** and approve the diff. Each row has a **+all / −all** batch button to connect or disconnect a server across all clients at once. Runtime-gap badges (e.g. "needs uv") appear when a server's required runtime isn't installed.
+
+### Credential Identities
+A single server can have multiple named credential sets (e.g. "personal" vs. "work" GitHub token). Secrets are stored OS-encrypted via Electron `safeStorage` — never in plaintext configs. Switch identities with one click from the matrix row; an optional health check blocks the switch if the new credential fails.
+
+### AI Assistant
+Describe a goal in plain English and Claude recommends a connection bundle. You review the diff before anything is written. Works with either an **Anthropic API key** or an existing **Claude Code login** — if you already use Claude Code you need zero additional setup.
+
+### Auto-updater
+The app checks for updates automatically (configurable in Settings: on launch / daily / weekly / never). Updates download in the background and install on the next restart — no re-download from a browser needed.
 
 ---
 
@@ -132,7 +153,7 @@ flowchart LR
 - **AI Advisor** — turns NL goals into reviewable connection plans (Anthropic).
 - **System Scanner / Trend Watcher** — suggested defaults and “new & relevant” discovery.
 
-See [`docs/superpowers/specs`](docs/superpowers/specs) for the full design.
+Every renderer call flows: `api.ts` → preload `contextBridge` → `ipcMain.handle` → `src/main/services/index.ts` → service layer. Adding a new feature means a handler in `ipc.ts`, a service method, and a bridge entry in `preload/index.ts` + `shared/api.ts`.
 
 ---
 
@@ -156,13 +177,16 @@ The catalog and client list are data‑driven — adding more is a small change 
 ## 🛠️ Development
 
 ```bash
-npm run dev         # hot-reloading dev app
-npm test            # unit tests (Vitest) — adapters + connection engine
-npm run typecheck   # strict TypeScript across main + renderer
-npm run build       # production bundle (electron-vite)
+npm run dev          # hot-reloading dev app
+npm test             # unit tests (Vitest) — adapters + connection engine
+npm run typecheck    # strict TypeScript across main + renderer
+npm run build        # production bundle (electron-vite)
+npm run screenshots  # regenerate screenshot assets
 ```
 
 Stack: **Electron · electron‑vite · React · TypeScript · Tailwind CSS · Vitest · electron‑builder.**
+
+> **First launch on Windows:** click **More info → Run anyway** if Windows SmartScreen appears (the installer may be unsigned on unsigned builds).
 
 ---
 
